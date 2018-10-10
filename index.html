@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>flow chart</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"> </script> 
+    <style>
+        #canvas {
+          border: 1px solid gray;
+        }
+        .dragableRect {
+          content: '';
+          position: absolute;
+          width: 6px;
+          height: 6px;
+          border: 1px solid green;
+          background-color: rgba(255, 255, 255, 0.5);
+        }
+        .dragableRect {
+          right: -4px;
+        }
+        .dragableRect.leftRect{
+          left: -4px;
+        }
+        .dragableRect.connected {
+          background-color: green;
+        }
+        
+    </style>
+  </head>
+  <body>
+    <h1>canvas flow chart</h1>
+    <p>
+      <label>普通模块名称</label><input id="moduleName" type="text">
+      <button id="createModule">创建模块</button>
+    </p>
+    <p>
+      <label>分支模块名称</label><input id="branchModuleName" type="text">
+      <button id="createModuleBranch">创建模块</button>
+      <label>分支</label>
+      <input id="branchName" type="text">
+      <button id="createBranch">创建分支</button>
+    </p>
+    <div id="bgcontainer"style="position:relative; width: 600px;height: 600px">
+      <canvas id='canvas'width="600" height="600"></canvas>
+    </div>
+    <script src="js/line.js"></script>
+    <script src="js/module.js"></script>
+    <script src="js/index.js"></script>
+  </body>
+</html>
