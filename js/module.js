@@ -293,7 +293,7 @@ class ContainModule extends BaseModule {
         $(`#${this.id}`).css({
             boxSizing: 'border-box',
             border: '1px solid #333'
-        })
+        });
     }
     resize() {
         this.containerHeight = this.height + (this.children.length+1) * this.childrenGap + this.children.length * this.childrenHeight;
