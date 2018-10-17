@@ -1,12 +1,13 @@
 class Baseline {
     constructor(options) {
-        this.id = 'line' + new Date().getTime();
-        this.originX = options.originX; //画布
-        this.originY = options.originY;
-        this.isEnd = false;
-
-        this.lineRange = 8; //点击范围
-        
+        let defaultOpts = {
+            id: 'line' + new Date().getTime(),
+            originX: 0,
+            originY: 0,
+            isEnd: false,
+            lineRange: 8
+        }
+        Object.assign(this, defaultOpts, options);
     }
     
     setPoint(opt={}) {
@@ -32,6 +33,7 @@ class Baseline {
         // 设置
     }
     lineCoordinate() {
+        // 当拖动模块时， 连线端点坐标重新获取
         if (this.start) {
             let startRect = $(`#${this.start.id} .rightRect`)[0],
                 offset = $(startRect).offset();
@@ -46,11 +48,12 @@ class Baseline {
         }
     }
     isOnline(x, y) {
-        // 近似垂直线
+        // 近似垂直线， 斜率为0
         let miny = Math.min(this.ey, this.sy),
             maxy = Math.max(this.ey, this.sy);
         if (Math.abs(this.ex - this.sx) <= this.lineRange && (x + this.lineRange > this.ex && x - this.lineRange < this.ex) && y >=miny && y <=maxy) return true;
-
+        
+        // 直线
         let k = (this.ey - this.sy) / (this.ex - this.sx);
         let b = this.ey - k * this.ex;
         let minx = Math.min(this.ex, this.sx),
@@ -66,13 +69,13 @@ class Baseline {
         this.isEnd = true;
         this.isDestroy = true;
         // end 
+        // 未销毁对象
     }
     // isLineModule(id) {
     //     return (this.start && this.start.id == id) || (this.end && this.end.id == id);
     // }
     _lineHover(evt) {
         console.log('line hover');
-
     }
     _lineClick(evt) {
         console.log('line click');

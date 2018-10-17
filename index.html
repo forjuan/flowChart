@@ -11,6 +11,9 @@
         #canvas {
           border: 1px solid gray;
         }
+        .childModule:hover {
+          background-color: lightblue!important;
+        }
         .dragableRect {
           content: '';
           position: absolute;
@@ -47,8 +50,10 @@
     <div id="bgcontainer"style="position:relative; width: 600px;height: 600px">
       <canvas id='canvas'width="600" height="600"></canvas>
     </div>
+    <script src="js/utils.js"></script>
     <script src="js/line.js"></script>
     <script src="js/module.js"></script>
+    <script src="js/flowchart.js"></script>
     <script src="js/index.js"></script>
   </body>
 </html>
