@@ -51,18 +51,27 @@ class Flowchart {
        });
    }
    createModule(type, options) {
-       var newmodule = {};
-       Object.assign(options, { 
-           originX: this.originX, 
-           originY: this.originY,
-           flowchart: this,
-           type
-        });
+       var newmodule = {},
+       containModule = {};
        if (type == 'normal') {
+            Object.assign(options, { 
+                originX: this.originX, 
+                originY: this.originY,
+                flowchart: this,
+                type
+            });
            newmodule = new BaseModule(options);
            newmodule.init();
        } else if (type == 'branchmodule') {
-           newmodule = new ContainModule(options);
+            Object.assign(options, { 
+                originX: this.originX, 
+                originY: this.originY,
+                flowchart: this,
+                type
+            });
+           containModule = new ContainModule(options);
+        //    newmodule = containModule.addBranch(options2)
+
        } else if (type == 'branch' && options.containerId) {
            let containModule = this.modules.find(item => item.id == options.containerId);
            newmodule = containModule.addBranch(options)

@@ -175,7 +175,7 @@ class BaseModule {
                     e.update({ex: x, ey: y});
                 }
             });
-            this.drawLines();
+            this.flowchart.drawLines();
         });
         $('body').on('dragend', `#${this.id}>.dragableRect.rightRect`, (event) => {
             // 如果没有降落在合适的位置， 取消
@@ -207,7 +207,7 @@ class BaseModule {
             });
             this.flowchart.lines.splice(inNumber, 1);
             this.startModuleId = null;
-            this.drawLines();
+            this.flowchart.drawLines();
         });
         $('body').on('drop', '.dragableRect.leftRect',(event) => {
             event = event.originalEvent;
@@ -216,7 +216,7 @@ class BaseModule {
             // 找到设置的id  找到line
             let id = this.startModuleId,
                 nowId = $(event.target).parent().attr('id');
-            let fmodule = this.flowchart.modules.find(mod => mod.id == nowId) || {};      
+            let fmodule = this.flowchart && this.flowchart.modules.find(mod => mod.id == nowId) || {};      
             let x = fmodule.x - fmodule.originX, y = fmodule.y - fmodule.originY + fmodule.height/2;
             if (id == nowId) return;
             this.flowchart.lines.forEach(e => { 
@@ -230,7 +230,7 @@ class BaseModule {
                     e.update({ex: x, ey: y});
                 }
             });
-            this.drawLines();
+            this.flowchart.drawLines();
         });
     }
     dragStart(event) {
@@ -284,7 +284,7 @@ class BaseModule {
                 } 
             });
         });
-        this.drawLines();
+        this.flowchart.drawLines();
     }
     destroy() {
         //  删除相关联的线
@@ -352,8 +352,12 @@ class ContainModule extends BaseModule {
         super(Object.assign(containOpt, options));
         this.init();
         this.containDraw();
+        this.addBranch({id: 'defaultChild', text: '请添加分支', canbeStart: false})
     }
     addBranch(options) {
+        if (this.children.length && this.children.find(child => child.id == 'defaultChild')) {
+            this.children = this.children.filter(child => child.id != 'defaultChild');
+        }
         options = Object.assign(options, { 
             $parent: $(`#${this.id}`),
             parentId: this.id, 
