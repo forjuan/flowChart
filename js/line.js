@@ -32,19 +32,22 @@ class Baseline {
         }
         // 设置
     }
-    lineCoordinate() {
+    lineCoordinate(scrollDistance = {}) {
         // 当拖动模块时， 连线端点坐标重新获取
+        // 传入滚动元素 以便获取滚动值
+        let scrollLeft = scrollDistance.scrollLeft || 0,
+            scrollTop = scrollDistance.scrollTop || 0;
         if (this.start) {
             let startRect = $(`#${this.start.id} .rightRect`)[0],
                 offset = $(startRect).offset();
-            this.sx = offset.left - this.originX + $(startRect).width()/2;
-            this.sy = offset.top - this.originY + $(startRect).height()/2;
+            this.sx = offset.left - this.originX + scrollLeft + $(startRect).width()/2;
+            this.sy = offset.top - this.originY + scrollTop + $(startRect).height()/2;
         }
         if (this.end) {
             let endRect = $(`#${this.end.id} .leftRect`)[0],
                 offset = $(endRect).offset();
-            this.ex = offset.left - this.originX + $(endRect).width()/2;
-            this.ey = offset.top - this.originY + $(endRect).height()/2;
+            this.ex = offset.left - this.originX + scrollLeft + $(endRect).width()/2;
+            this.ey = offset.top -  this.originY + scrollTop + $(endRect).height()/2;
         }
     }
     isOnline(x, y) {

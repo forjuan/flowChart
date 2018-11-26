@@ -11,6 +11,12 @@
         #canvas {
           border: 1px solid gray;
         }
+        .father {
+          width: 500px;
+          height: 600px;
+          overflow: scroll;
+          background: pink;
+        }
         .childModule:hover {
           background-color: lightblue!important;
         }
@@ -48,9 +54,12 @@
       <button id="createModuleBranch">创建分支模块</button>
 
     </p>
-    <div id="bgcontainer"style="position:relative; width: 600px;height: 600px">
-      <canvas id='canvas'width="600" height="600"></canvas>
+    <div class="father">
+      <div id="bgcontainer"style="position:relative; width: 800px;height: 800px">
+        <canvas id='canvas'width="800" height="800"></canvas>
+      </div>
     </div>
+   
     <script src="js/utils.js"></script>
     <script src="js/line.js"></script>
     <script src="js/module.js"></script>

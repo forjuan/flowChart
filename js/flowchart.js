@@ -9,6 +9,8 @@ class Flowchart {
         this.height = this.canvas.height();
         this.originX = this.canvas.offset().left;
         this.originY = this.canvas.offset().top;
+        this.scrollParent = $(options.scrollParent) || this.canvas.parent().parent();
+
         this.init();
         this.initEvent();
     }
@@ -72,9 +74,9 @@ class Flowchart {
            containModule = new ContainModule(options);
         //    newmodule = containModule.addBranch(options2)
 
-       } else if (type == 'branch' && options.containerId) {
-           let containModule = this.modules.find(item => item.id == options.containerId);
-           newmodule = containModule.addBranch(options)
+    //    } else if (type == 'branch' && options.containerId) {
+    //        let containModule = this.modules.find(item => item.id == options.containerId);
+    //        newmodule = containModule.addBranch(options)
        }
        newmodule.drawLines = this.drawLines.bind(this);
        newmodule.deleteRelaLines = this.deleteRelaLines.bind(this);
@@ -83,8 +85,9 @@ class Flowchart {
    onLine(event) {
        // 移动到连线上
         event = event.originalEvent;
-        let x = event.pageX - this.originX,
-            y = event.pageY - this.originY;
+        let scrollDistance = this.scrollDistance();
+        let x = event.pageX - this.originX + scrollDistance.scrollLeft,
+            y = event.pageY - this.originY + scrollDistance.scrollTop;
         $('#bgcontainer').css({
             cursor: 'default'
         });
@@ -98,8 +101,9 @@ class Flowchart {
    }
    onLineClick(event) {
         event = event.originalEvent;
-        let x = event.pageX - this.originX,
-        y = event.pageY - this.originY;
+        let scrollDistance = this.scrollDistance();
+        let x = event.pageX - this.originX + scrollDistance.scrollLeft,
+            y = event.pageY - this.originY + scrollDistance.scrollTop;
         //    已有聚焦的线
         this.lines.forEach(line => {line.focus = false; line.lineWidth = 1});
         let online = this.lines.find(line => line.isOnline(x, y));
@@ -115,6 +119,12 @@ class Flowchart {
             let line = this.lines.find((line) => line.focus);
             this.deleteLine(line);
         } 
+   }
+   scrollDistance() {
+       return {
+           scrollLeft: this.scrollParent.scrollLeft() || 0,
+           scrollTop: this.scrollParent.scrollTop() || 0
+       }
    }
    initEvent() {
        let self = this;

@@ -1,4 +1,4 @@
-var flowchart = new Flowchart();
+var flowchart = new Flowchart({scrollParent: '.father'});
 
 flowchart.createModule('normal',Object.assign({isFirst: true}));
 flowchart.createModule('normal', Object.assign({isLast: true, text: '结束'}));

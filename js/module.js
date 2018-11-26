@@ -5,12 +5,10 @@ class BaseModule {
             id: 'module' + new Date().getTime(),
             isFirst: false, //是否为开始模块
             isLast: false, // 是否为结束模块
-            $parent: $('body'),
+            $parent: $('#bgcontainer'),
             hasDelete: false,
             hasSetting: false,
             ratio,
-            originX: 0,
-            originY: 0,
             text: '开始',
             width: 100,
             height: 30,
@@ -19,10 +17,12 @@ class BaseModule {
             fontColor: '#000',
             fontSize: 12,
             textX: 5,
-            x: options.originX || 0,
-            y: options.originY || 0,
             canvasX: 0, //canvas x 坐标
             canvasY: 0,
+            originX: 0,
+            originY: 0,
+            x: 0,
+            y: 0,
             containerHeight: 0, //有子模块是整体高度,
             type: 'normal'
         }
@@ -137,7 +137,7 @@ class BaseModule {
             if (line) return ;
 
             var elementPro = '';
-            line = new Baseline({ originX: this.originX, originY: this.originY });
+            line = new Baseline({ originX: this.originX, originY: this.originY});
             if ($(event.target).hasClass('leftRect')) {
                 elementPro = 'end';
             } else {
@@ -146,19 +146,19 @@ class BaseModule {
             line[elementPro] = {
                 id: nowId
             };
-            line.lineCoordinate();
+            line.lineCoordinate(this.flowchart.scrollDistance());
             this.flowchart.lines.push(line);
             this.startModuleId = nowId;
             event.dataTransfer.effectAllowed= 'copy';
             event.dataTransfer.setData('startModuleId', nowId);
-
         });
 
         $(document).on('dragover', (event) => {
             event = event.originalEvent;
             // 不阻止默认行为，否则不能drop
             event.preventDefault();
-            let x = event.pageX - this.originX, y = event.pageY - this.originY;
+            let scrollDistance = this.flowchart.scrollDistance();
+            let x = event.pageX - this.originX + scrollDistance.scrollLeft, y = event.pageY - this.originY + scrollDistance.scrollTop;
            
             let nowId = this.startModuleId;
             if (nowId != this.id) return;
@@ -217,16 +217,15 @@ class BaseModule {
             let id = this.startModuleId,
                 nowId = $(event.target).parent().attr('id');
             let fmodule = this.flowchart && this.flowchart.modules.find(mod => mod.id == nowId) || {};      
-            let x = fmodule.x - fmodule.originX, y = fmodule.y - fmodule.originY + fmodule.height/2;
+            let x = fmodule.x, y = fmodule.y + fmodule.height/2;
             if (id == nowId) return;
-            this.flowchart.lines.forEach(e => { 
+            this.flowchart && this.flowchart.lines.forEach(e => { 
                 if (e.isEnd) return;
                 if (e.start && e.start.id == id) {
                     e.setPoint({
                         end: { id: nowId }
                     });
-                    // let startmo = this.flowchart.modules.find(imo => e.start.id == imo.id);
-                    // startmo.nextId = 
+
                     e.update({ex: x, ey: y});
                 }
             });
@@ -257,18 +256,17 @@ class BaseModule {
         let width = this.containerWidth || this.width; //暂时没有containerWidth, 预留
         let height = this.containerHeight || this.height;
         // 边界检测
-        if (this.x < this.originX) this.x = this.originX;
-        if (this.x > this.originX + this.flowchart.width - width) this.x = this.originX + this.flowchart.width - width;
+        if (this.x < 0) this.x = 0;
+        if (this.x > 0 + this.flowchart.width - width) this.x = this.flowchart.width - width;
 
-        if (this.y < this.originY) this.y = this.originY;
-        if (this.y > this.originY + this.flowchart.height - height) this.y = this.originY + this.flowchart.height - height;
+        if (this.y < 0) this.y = 0;
+        if (this.y > 0 + this.flowchart.height - height) this.y = this.flowchart.height - height;
         this.dragDom();
     }
     contains(ancestorId, descendant) {
         let ancestor = document.getElementById(ancestorId);
         return ancestor && $.contains(ancestor, descendant);
     }
-
     dragDom() {
         this.div.css({
             left: this.x,
@@ -277,10 +275,9 @@ class BaseModule {
         let dragableRect = Array.from(this.div.find('.dragableRect'));
         dragableRect.length && dragableRect.forEach(rect => {
             this.flowchart.lines.forEach(line => {
-                let parentOffset = $(rect).position();
                 let rectClass = '.'+ rect.className.replace(' ', '.');
                 if ($(`#${line.start.id} ${rectClass}`).is($(rect)) || $(`#${line.end.id} ${rectClass}`).is($(rect))) {
-                    line.lineCoordinate();
+                    line.lineCoordinate(this.flowchart.scrollDistance());
                 } 
             });
         });
@@ -289,11 +286,10 @@ class BaseModule {
     destroy() {
         //  删除相关联的线
         // let line = lines.find((line) => line.start.id == this.id || line.end.id == this.id);
-        this.deleteRelaLines(this.id, this.children);
+        this.flowchart.deleteRelaLines(this.id, this.children);
         this.div.remove();
         // 还没消除本身对象
     }
-
 }
 class ChildModule extends BaseModule {
     constructor(options) {
@@ -315,10 +311,11 @@ class ChildModule extends BaseModule {
         }, options);
         childModuleOpt.width = childModuleOpt.parentwidth - childModuleOpt.gap * 2;
         childModuleOpt.height = childModuleOpt.parentHeight - childModuleOpt.gap;
-        childModuleOpt.x = childModuleOpt.gap || 10;
-        childModuleOpt.y = childModuleOpt.parentHeight + (childModuleOpt.childrenLength + 1) * childModuleOpt.gap + (childModuleOpt.childrenLength * childModuleOpt.height);
 
         super(childModuleOpt);
+        this.x = childModuleOpt.gap || 10;
+        this.y = childModuleOpt.parentHeight + (childModuleOpt.childrenLength + 1) * childModuleOpt.gap + (childModuleOpt.childrenLength * childModuleOpt.height);
+
         this.init();
         this.childDraw();
     }
@@ -327,15 +324,6 @@ class ChildModule extends BaseModule {
             backgroundColor: 'rgba(238, 238, 238, 0.5)'
         })
     }
-    // contains(childModuleId, descendant) {
-    //     let ancestor = null;
-    //     // if ($(`#${childModuleId}`).parent().attr('id') && $(`#${childModuleId}`).parent().attr('id').indexOf('containModule') > -1) return true;
-    //     // return false;
-    //     // if (childModuleId == this.id) {
-    //     //     ancestor = document.getElementById(this.parentId);
-    //     // }
-    //     return ancestor && $.contains(ancestor, descendant);
-    // }
 }
 
 class ContainModule extends BaseModule {
@@ -360,6 +348,7 @@ class ContainModule extends BaseModule {
         }
         options = Object.assign(options, { 
             $parent: $(`#${this.id}`),
+            flowchart,
             parentId: this.id, 
             parentwidth: this.width, 
             parentHeight: this.height, 
