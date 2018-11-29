@@ -14,10 +14,7 @@ $('body').on('click', 'button', function(event) {
     } else if ($(event.target).is($('#createModuleBranch'))) {
         // 包括分支模块
         var text = $('#branchModuleName').val();
-        flowchart.createModule('branchmodule', Object.assign({text, hasDelete: true, settingCallback: function(smodule) {
-            currentModule = smodule;
-            $('#updateModule').val(currentModule.text);
-        }}));
+        flowchart.createModule('branchmodule', Object.assign({text, hasDelete: true}));
     }
 });
 
@@ -33,10 +30,24 @@ $('#addChild').click(function() {
 $('#save').click(function() {
     flowchart.save();
 })
-
+$('canvas').on('modulesetting', function(data) {
+    currentModule = data.module;
+    $('#updateModule').val(currentModule.text);
+    if(currentModule.children.length) {
+        for(let i=0; i< currentModule.children.length; i++) {
+            let child = currentModule.children[i];
+            let input = $(`<input value=${child.text}>`);
+            input.change(function() {
+                child.text = this.value;
+                child.update(child);
+            })
+            $('body').append(input);
+        }
+    }
+    currentModule.removeChildren()
+});
 flowchart.restore()
 if(flowchart.modules.length === 0){
     flowchart.createModule('normal',Object.assign({isFirst: true, hasSetting: true, }));
-flowchart.createModule('normal', Object.assign({isLast: true, text: '结束'}));
-
-} 
+    flowchart.createModule('normal', Object.assign({isLast: true, text: '结束'}));
+}

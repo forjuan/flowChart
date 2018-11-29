@@ -23,8 +23,7 @@ function BaseModule (options = {}) {
         x: 0,
         y: 0,
         containerHeight: 0, //有子模块是整体高度,
-        type: 'normal',
-        settingCallback: () => { console.log('default setting')}
+        type: 'normal'
     }
 
     Object.assign(this, defaultOpt, options);
@@ -50,7 +49,6 @@ function BaseModule (options = {}) {
     this.canDrag = options.canDrag === undefined ? true : options.canDrag;
     this.font = `${this.fontSize}px Microsoft Yahei`;
     this.textY = this.height* this.ratio - (this.height* this.ratio - this.fontSize)/2; //canvas 以文字底端算y距离
-    this.flowchart && this.flowchart.modules.push(this);
 }
 BaseModule.prototype.update = function(newModule) {
     Object.assign(this, newModule);
@@ -100,35 +98,18 @@ BaseModule.prototype.init = function() {
         this.deletectx = canvasDelete[0].getContext('2d');
         this.delete = $delete;
         resetCanvasRatio(canvasDelete, width, width, this.ratio);
-        $delete.on('click', () => this.destroy())
+        $delete.on('click', (event) => {
+            event.stopPropagation();
+            this.destroy();
+        })
         $delete.append(canvasDelete);
         div.append($delete);
     }
     this.drawModule();
-
-    // // 设置模块
-    // if (this.hasSetting) {
-    //     if (this.hasDelete) {
-    //         var right = 10 + this.deleteWidth + 10;
-    //     } else {
-    //         var right = 10;
-    //     }
-    //     var top = (this.height - 10)/2;
-    //     var $setting = $(`<div id="setting${this.id}" style="position: absolute; right: ${right}px; top: ${top}px; width: 10px; height: 10px"></div>`);
-    //     $setting.load('setting.svg');
-    //     this.$setting = $setting;
-    //     div.append($setting);
-    //     $('body').on('mousedown', `#setting${this.id}`, (event) => {
-    //         event.originalEvent.stopPropagation();
-    //         console.log('设置');
-    //         // 设置module
-    //         this.settingCallback(this);
-    //     });
-    // }
     this.createdragableRect();
-
     div.append(canvas);
     this.$parent.append(div);
+    this.flowchart && this.flowchart.modules.push(this);
 }
 BaseModule.prototype.createdragableRect = function() {
     if (this.canbeEnd) {
@@ -223,7 +204,6 @@ BaseModule.prototype.createdragableRect = function() {
                 });
                 let mostart = this.flowchart.modules.find(start => start.id == id) || {};
                 let monext = this.flowchart.modules.find(next => next.id == nowId) || {};
-                mostart.nextBid = monext.bid;
                 mostart.nextId = monext.id;
                 e.update({ex: x, ey: y});
             }
@@ -245,7 +225,8 @@ BaseModule.prototype.dragEnd = function(event) {
     this.isDrag = false;
     if (!this.oldmouseX || !this.oldmouseY) return;
     if (event.pageX == this.startmouseX && event.pageY == this.startmouseY && this.hasSetting) {
-        this.settingCallback(this);
+        var e = $.Event('modulesetting', { module: this })
+        this.flowchart.canvas.triggerHandler(e)
     }
 }
 BaseModule.prototype.drag = function(event) {
@@ -294,6 +275,7 @@ BaseModule.prototype.destroy = function() {
     this.flowchart.deleteRelaLines(this.id, this.children);
     this.div.remove();
     // 还没消除本身对象
+    this.flowchart.modules = this.flowchart.modules.filter(item => item.id !== this.id);
 }
 
 
@@ -332,7 +314,7 @@ ContainModule.prototype.addBranch = function(options) {
         childrenLength: this.children.length,
         originX: this.originX,
         originY: this.originY,
-        containerId: this.bid
+        containerId: this.id
     })
     let mod = new ChildModule(options);
     this.childrenHeight = mod.height;
@@ -350,6 +332,33 @@ ContainModule.prototype.containDraw = function() {
 ContainModule.prototype.resize = function() {
     this.containerHeight = this.height + (this.children.length+1) * this.childrenGap + this.children.length * this.childrenHeight;
     $(`#${this.id}`).css({height: this.containerHeight});
+}
+
+ContainModule.prototype.removeChild = function(moduleId) {
+    this.children = this.children.filter((child) => {
+        if(child.id == moduleId) {
+            child.destroy();
+        } else {
+            return child;
+        }
+    });
+    this.resize();
+}
+ContainModule.prototype.destroy = function() {
+    //  删除相关联的线
+    // let line = lines.find((line) => line.start.id == this.id || line.end.id == this.id);
+    this.flowchart.deleteRelaLines(this.id, this.children);
+    this.div.remove();
+    // 还没消除本身对象
+    let modules = this.flowchart.modules;
+    this.flowchart.modules = this.flowchart.modules.filter(item => item.id !== this.id);
+    this.removeChildren();
+}
+
+ContainModule.prototype.removeChildren = function() {
+    this.children.forEach(item => item.destroy());
+    this.children = [];
+    this.resize();
 }
 
 // 被包含菜单的子模块

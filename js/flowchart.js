@@ -78,8 +78,8 @@ Flowchart.prototype.createModule = function(type, options) {
          });
         containModule = new ContainModule(options);
     } else if (type == 'branch') {
-        let mo = this.get('modules') && this.get('modules').find(item=> item.bid == options.parentBid);
-        mo.addBranch(options);
+        let mo = this.modules && this.modules.find(item=> item.id && item.id == options.parentId);
+        mo && typeof mo.addBranch == 'function' && mo.addBranch(options);
     }
     newmodule.drawLines = this.drawLines.bind(this);
     newmodule.deleteRelaLines = this.deleteRelaLines.bind(this);
@@ -152,20 +152,21 @@ Flowchart.prototype.save = function () {
     this.modules.forEach(item => {
       let obj = {
         type: item.type,
-        bid: item.bid,
-        nextBid: item.nextBid,
-        parentBid: item.parentBid,
+        id: item.id,
+        nextId: item.nextId,
+        parentId: item.parentId,
         text: item.text,
         viewInfo: JSON.stringify({
           id: item.id,
           nextId: item.nextId,
-          parentBid: item.parentBid,
+          parentId: item.parentId,
           x: item.x,
           y: item.y,
           isFirst: item.isFirst,
           isLast: item.isLast,
           hasDelete: item.hasDelete,
-          hasSetting: item.hasSetting
+          hasSetting: item.hasSetting,
+          settingCallback: item.settingCallback
         })
       };
       mos.push(obj);
@@ -178,7 +179,13 @@ Flowchart.prototype.restore = function(modules = []) {
     let lines = [];
     if (!localStorage.getItem('modules')) return;
     modules = JSON.parse(localStorage.getItem('modules'));
-    modules.forEach(async item => {
+    // 先恢复父模块和普通模块
+    let childModules = modules.filter(item => item.type === 'branch');
+    let otherModules = modules.filter(item => item.type !== 'branch')
+    otherModules.forEach(item => moduleRestore.call(this, item));
+    childModules.forEach(item => moduleRestore.call(this, item));
+    
+    function moduleRestore(item) {
         var obj = Object.assign(item, JSON.parse(item.viewInfo));
         this.createModule(item.type, obj, false);
         setTimeout(() => {
@@ -191,9 +198,8 @@ Flowchart.prototype.restore = function(modules = []) {
                 lines.push(line);
                 this.lines = lines;
                 this.drawLines();
-                }
+            }
         }, 200);
-        
-    });
+    }
     
 }
