@@ -90,12 +90,12 @@ Flowchart.prototype.onLine = function(event) {
      let scrollDistance = this.scrollDistance();
      let x = event.pageX - this.originX + scrollDistance.scrollLeft,
          y = event.pageY - this.originY + scrollDistance.scrollTop;
-     $('#bgcontainer').css({
+     this.scrollParent.css({
          cursor: 'default'
      });
      this.lines.forEach(line => {
          if (line.isOnline(x, y)) {
-             $('#bgcontainer').css({
+            this.scrollParent.css({
                  cursor: 'pointer'
              });
          } 

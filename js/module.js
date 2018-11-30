@@ -20,7 +20,7 @@ function BaseModule (options = {}) {
         canvasY: 0,
         originX: 0,
         originY: 0,
-        x: 0,
+        x: 0, 
         y: 0,
         containerHeight: 0, //有子模块是整体高度,
         type: 'normal'
@@ -75,7 +75,7 @@ BaseModule.prototype.drawModule = function() {
 }
 BaseModule.prototype.init = function() {
     // 创建一个div元素包含canvas元素
-    var div = $(`<div id="${this.id}" class="basemodule ${this.className}" style="position: absolute; z-index: 1;left: ${this.x}px; top: ${this.y}px; width: ${this.width}px; height: ${this.height}px"></div>`);
+    var div = $(`<div id="${this.id}" draggable="false" class="basemodule ${this.className}" style="position: absolute; z-index: 1;left: ${this.x}px; top: ${this.y}px; width: ${this.width}px; height: ${this.height}px;"></div>`);
     var canvas = $(`<canvas id="canvas${this.id}" width=${this.width} height=${this.height}></canvas>`);
     this.div = div;
     
@@ -83,9 +83,9 @@ BaseModule.prototype.init = function() {
     this.$canvas = canvas;
     resetCanvasRatio(canvas, this.width, this.height, this.ratio);
     if (this.canDrag) {
-        div.mousedown(this.dragStart.bind(this));
-        $('body').mouseup(this.dragEnd.bind(this));
-        $('body').mousemove(this.drag.bind(this));
+        div.mousedown(this.moveStart.bind(this));
+        $('body').mouseup(this.moveEnd.bind(this));
+        $('body').mousemove(this.moveDrag.bind(this));
     }
     
 
@@ -112,6 +112,7 @@ BaseModule.prototype.init = function() {
     this.flowchart && this.flowchart.modules.push(this);
 }
 BaseModule.prototype.createdragableRect = function() {
+    // 创建连接点
     if (this.canbeEnd) {
         var leftdiv = $(`<div class="dragableRect leftRect" style="top: ${this.height/2 - 3}px"></div>`);
         this.div.append(leftdiv);
@@ -143,9 +144,11 @@ BaseModule.prototype.createdragableRect = function() {
         this.startModuleId = nowId;
         event.dataTransfer.effectAllowed= 'copy';
         event.dataTransfer.setData('startModuleId', nowId);
+        this.isLinging = true;
     });
 
-    $(document).on('dragover', (event) => {
+    $(this.flowchart.scrollParent).on('dragover', (event) => {
+        if (!this.isLinging) return false;
         event = event.originalEvent;
         // 不阻止默认行为，否则不能drop
         event.preventDefault();
@@ -172,6 +175,7 @@ BaseModule.prototype.createdragableRect = function() {
     $('body').on('dragend', `#${this.id}>.dragableRect.rightRect`, (event) => {
         // 如果没有降落在合适的位置， 取消该连线
         event = event.originalEvent;
+        this.isLinging = false;
         event.preventDefault();
         if (!this.flowchart.lines.find(line => !line.isEnd)) return;
         let myline = this.flowchart.lines.find((line) => {
@@ -211,37 +215,140 @@ BaseModule.prototype.createdragableRect = function() {
         this.flowchart.drawLines();
     });
 }
-BaseModule.prototype.dragStart = function(event) {
+BaseModule.prototype.inScrollParent = function(point) {
+    // point 为pagex, pagey相对于整个文档的距离
+    // 某个点是否在scrollparent 区域内
+    let offset = this.flowchart.scrollParent.offsetValue || this.flowchart.scrollParent.offset(),
+        width = this.flowchart.scrollParent.widthValue || this.flowchart.scrollParent.width(),
+        height = this.flowchart.scrollParent.heightValue || this.flowchart.scrollParent.height();
+    this.flowchart.scrollParent.offsetValue = offset;
+    this.flowchart.scrollParent.widthValue = width;
+    this.flowchart.scrollParent.heightValue = height;
+    // 矩形边界检测
+    return offset.left <= point.x && point.x <= offset.left + width &&
+            offset.top <= point.y && point.y <= offset.top + height;
+}
+
+BaseModule.prototype.moveScroll = function(event) {
+    // 处理滚动， 如果已经在滚动不做处理
+    if (this.isAutoScroll) return;
+    let point = { x: event.pageX, y: event.pageY };
+    // 鼠标相隔最近scrollParent的四个方向线段， 并朝该方向滚动
+    let offset = this.flowchart.scrollParent.offsetValue || this.flowchart.scrollParent.offset(),
+        width = this.flowchart.scrollParent.widthValue || this.flowchart.scrollParent.width(),
+        height = this.flowchart.scrollParent.heightValue || this.flowchart.scrollParent.height();
+    let left = { dir:'left', start: { x: offset.left, y: offset.top }, end: { x: offset.left, y: offset.top + height }},
+        right = { dir:'right',start: { x: offset.left + width, y: offset.top}, end: { x: offset.left + width, y: offset.top + height}},
+        top = { dir:'top',start: { x: offset.left, y: offset.top}, end: { x: offset.left + width, y: offset.top }},
+        bottom = { dir:'bottom',start: { x: offset.left, y: offset.top + height }, end: { x: offset.left + width, y: offset.top + height }};
+    //如果有鼠标点到两条线段的距离相同时，随机选个方向滚动 
+    let leftdis = pointToSegDist(point, left.start, left.end),
+        rightdis = pointToSegDist(point, right.start, right.end),
+        topdis = pointToSegDist(point, top.start, top.end),
+        bottomdis = pointToSegDist(point, bottom.start, bottom.end);
+    let mindis = Math.min(leftdis, rightdis, topdis, bottomdis);
+    if (topdis === mindis) {
+        this.autoScroll('top')
+
+    } else if (bottomdis === mindis) {
+        this.autoScroll('bottom');
+
+    } else if (leftdis === mindis) {
+        this.autoScroll('left')
+    } else if (rightdis === mindis) {
+        this.autoScroll('right')
+    }
+
+}
+BaseModule.prototype.autoScroll = function(dir) {
+    let stepD = 10; // 每次移动距离
+    // 自动进行移动， 如果停止拖拽或者运动抵达距离就停止
+    clearInterval(this.timer);
+    this.isAutoScroll = true;
+    if (dir === 'top' ) {
+        this.timer = setInterval(()=> {
+            let disTop = this.flowchart.scrollParent.scrollTop();
+            this.flowchart.scrollParent.scrollTop(disTop - stepD);
+            if (disTop === 0 || !this.isDrag) {
+                this.stopScroll();
+            };
+        }, 60)
+    } else if (dir === 'bottom') {
+        this.timer = setInterval(()=> {
+            let disTop = this.flowchart.scrollParent.scrollTop(),
+                scrollParentHeight = this.flowchart.scrollParent.heightValue || this.flowchart.scrollParent.height();
+            if (disTop + scrollParentHeight == this.flowchart.height || !this.isDrag) {
+                // 滚动距离加屏幕可显示距离 为整个画布距离时 则滑到底
+                this.stopScroll();
+            };
+            this.flowchart.scrollParent.scrollTop(disTop + stepD);
+        }, 60)
+    } else if (dir === 'left' ) {
+        this.timer = setInterval(() => {
+            let disLeft = this.flowchart.scrollParent.scrollLeft();
+            this.flowchart.scrollParent.scrollLeft(disLeft - stepD);
+            if (disLeft === 0 || !this.isDrag) {
+                this.stopScroll();
+            }
+        }, 60)
+    } else if (dir === 'right') {
+        this.timer = setInterval(() => {
+            let disLeft = this.flowchart.scrollParent.scrollLeft(),
+                scrollParentWidth = this.flowchart.scrollParent.widthValue || this.flowchart.scrollParent.width();
+            if (disLeft + scrollParentWidth >= this.flowchart.width) {
+                this.stopScroll();
+            }
+            this.flowchart.scrollParent.scrollLeft(disLeft + stepD);
+        }, 60)
+    }
+}
+BaseModule.prototype.stopScroll = function() {
+    clearInterval(this.timer);
+    this.isAutoScroll = false;
+}
+
+BaseModule.prototype.moveStart = function(event) {
     if ($(event.target).is(this.$setting) || $(event.target).hasClass('dragableRect')) return;
     this.isDrag = true;
-    if (this.isDrag) {
-        this.oldmouseX = event.pageX;
-        this.oldmouseY = event.pageY;
-    }
+    this.stopScroll()
+    // 开始点
     this.startmouseX = event.pageX;
     this.startmouseY = event.pageY;
+    let scrollDistance = this.flowchart.scrollDistance();
+    // 鼠标跟随模块的点
+    this.followPoint = {
+        relativeX: event.pageX - this.originX + scrollDistance.scrollLeft - this.x,
+        relativeY: event.pageY - this.originY + scrollDistance.scrollTop - this.y
+    }
+
 }
-BaseModule.prototype.dragEnd = function(event) {
+BaseModule.prototype.moveEnd = function(event) {
     this.isDrag = false;
-    if (!this.oldmouseX || !this.oldmouseY) return;
     if (event.pageX == this.startmouseX && event.pageY == this.startmouseY && this.hasSetting) {
         var e = $.Event('modulesetting', { module: this })
         this.flowchart.canvas.triggerHandler(e)
     }
+    this.stopScroll()
 }
-BaseModule.prototype.drag = function(event) {
+BaseModule.prototype.moveDrag = function(event) {
     if ($(event.target).is(this.$setting) || $(event.target).hasClass('dragableRect')) return;
     if(!this.isDrag) return;
+    // 如果鼠标在可视区外，模块不被拖动
+    if (!this.inScrollParent({x: event.pageX, y: event.pageY})) {
+        this.moveScroll(event);
+        return;
+    } else {
+        this.stopScroll()
+    }
     // 在拖拽过程中
-    let offsetX = event.pageX - this.oldmouseX,
-        offsetY = event.pageY - this.oldmouseY;
-    this.x = this.x + offsetX;
-    this.y = this.y + offsetY;
-    this.oldmouseX = event.pageX;
-    this.oldmouseY = event.pageY;
+    let scrollDistance = this.flowchart.scrollDistance();
+    // originx canvas距离页面左边的距离
+    this.x = event.pageX + scrollDistance.scrollLeft - this.originX - this.followPoint.relativeX;
+    this.y = event.pageY + scrollDistance.scrollTop - this.originY- this.followPoint.relativeY;
     let width = this.containerWidth || this.width; //暂时没有containerWidth, 预留
     let height = this.containerHeight || this.height;
-    // 边界检测
+   
+    // 模块可移动区域边界检测
     if (this.x < 0) this.x = 0;
     if (this.x > 0 + this.flowchart.width - width) this.x = this.flowchart.width - width;
 
@@ -254,6 +361,7 @@ BaseModule.prototype.contains = function(ancestorId, descendant) {
     return ancestor && $.contains(ancestor, descendant);
 }
 BaseModule.prototype.dragDom = function() {
+    // 拖动模块
     this.div.css({
         left: this.x,
         top: this.y
