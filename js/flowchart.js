@@ -275,6 +275,8 @@ Flowchart.prototype.save = function () {
         feNextId: item.feNextId,
         feParentId: item.feParentId,
         text: item.text,
+        type: item.type,
+        data: item.data,
         viewInfo: JSON.stringify({
           feType: item.feType,
           feId: item.feId,
