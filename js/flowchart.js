@@ -10,6 +10,19 @@ function Flowchart(options={}) {
     this.originY = this.canvas.offset().top;
     this.creatingModule = null;
     this.scrollParent = $(options.scrollParent) || this.canvas.parent().parent();
+    this.lineRandomIds = [];
+
+    // 生成一个数组，以便line 线段可以生成不重复Id
+    for (let i = 0; i<= 1000; i++) {
+        i = String(i);
+        if (i.length < 4)  {
+            let d = 4 - i.length;
+            for (let j = 1; j<= d ; j++) {
+                i = '0' + i;
+            }
+        }
+        this.lineRandomIds.push(i);
+    }
     this.init();
     this.initEvent();
 }
@@ -34,9 +47,10 @@ Flowchart.prototype.init = function() {
 Flowchart.prototype.deleteLine = function(line) {
     if(!line) return;
     let allModules = this.modules || [];
+
     let cMod = allModules.find(item => item.feId == line.start.feId) || {};
     cMod.feNextId = null;
-    this.lines = this.lines.filter((li={}) => li.feId &&line.feId != li.feId);
+    this.lines = this.lines.filter((li={}) => li.feId && line.feId != li.feId);
     let endId = line.end && line.end.feId;
     let otherEnd = this.lines.find((li={}) => li.end && endId == li.end.feId);
     if (!otherEnd) $(`#${endId} .dragableRect.leftRect`).css({backgroundColor: 'rgba(255, 255, 255, 0.5)'});
@@ -312,7 +326,9 @@ Flowchart.prototype.restore = function(modules = []) {
         let moduleItem = this.createRealModule(obj);
         setTimeout(() => {
             if (obj.feNextId) {
-                var line = new Baseline({ originX: this.originX, originY: this.originY});
+                let random = this.lineRandomIds.shift(0);
+                let feId = 'line' + new Date().getTime() + random;
+                var line = new Baseline({ originX: this.originX, originY: this.originY, feId });
                 line.start = { feId: obj.feId };
                 line.end = { feId: obj.feNextId};
                 line.styleEndPonit();

@@ -81,6 +81,7 @@ BaseModule.prototype.init = function() {
     this.ctx = canvas[0].getContext('2d');
     this.$canvas = canvas;
     resetCanvasRatio(canvas, this.width, this.height, this.ratio);
+    
     if (this.canDrag) {
         div.mousedown(this.moveStart.bind(this));
         $('body').mouseup(this.moveEnd.bind(this));
