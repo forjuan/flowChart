@@ -73,7 +73,7 @@ Flowchart.prototype.drawLines = function() {
 Flowchart.prototype.createModule = function(options) {
     options.isDragCreate = options.isDragCreate || false; //创建模块时是否要拖动
     if (!options.isDragCreate) {
-        return this.createRealModule(options);
+        return this.createRealModule(options, true);
     } else {
         this.creatingModule = Object.assign(options, { 
             originX: this.originX, 
@@ -81,7 +81,7 @@ Flowchart.prototype.createModule = function(options) {
             flowchart: this,
             feType: options.feType
         });
-        return this.creatingModule;
+        this.creatingModule;
     }
 }
 Flowchart.prototype.createRealModule = function(options, shouldInSave=true) {

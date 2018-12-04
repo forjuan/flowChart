@@ -473,7 +473,7 @@ ContainModule.prototype.removeChildren = function() {
 
 // 被包含菜单的子模块
 function ChildModule(options={}) {
-    this.id = `childModule${new Date().getTime()}`;
+    this.feId = `childModule${new Date().getTime()}`;
     this.className = 'childModule';
     this.canbeEnd = false;
     this.canbeStart = true;

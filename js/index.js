@@ -40,7 +40,8 @@ $('#createModuleBranch').on('dragstart', function(event) {
 
 $('#update').click(function() {
     currentModule.text = $('#updateModule').val();
-    flowchart.updateModule(currentModule)
+    flowchart.updateModule(currentModule);
+    $('#addChild').parent().find('.childInput').remove();
 })
 
 $('#addChild').click(function() {
@@ -50,7 +51,7 @@ $('#addChild').click(function() {
         feParentId: currentModule.feId, //父级模块id 必须
         text: $('#childModule').val()
     })
-    let input = $(`<input value=${childModule.text}>`);
+    let input = $(`<input class="childInput"value=${childModule.text}>`);
     input.change(function() {
         childModule.text = this.value;
         flowchart.updateModule(childModule);
