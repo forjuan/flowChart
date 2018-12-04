@@ -8,14 +8,14 @@ function BaseModule (options = {}) {
         hasDelete: false,
         hasSetting: false,
         ratio,
-        text: '开始',
+        text: '标题',
         width: 100,
         height: 30,
         deleteWidth: 10,
         color: '#333',
         fontColor: '#000',
         fontSize: 12,
-        textX: 5,
+        textX: 5, //文字据左边偏移
         canvasX: 0, //canvas x 坐标
         canvasY: 0,
         originX: 0,
@@ -28,6 +28,7 @@ function BaseModule (options = {}) {
 
     Object.assign(this, defaultOpt, options);
     this.fontSize = this.fontSize * ratio;
+    this.text = options.text ? options.text : this.isFirst ? '开始': (this.isLast ? '结束': '标题');
     this.textX = this.textX * ratio;
 
     if (this.isLast) {
@@ -87,8 +88,6 @@ BaseModule.prototype.init = function() {
         $('body').mouseup(this.moveEnd.bind(this));
         $('body').mousemove(this.moveDrag.bind(this));
     }
-    
-
     if (this.hasDelete) {
         var width = this.deleteWidth;
         var rx = 10;
@@ -109,7 +108,6 @@ BaseModule.prototype.init = function() {
     this.createdragableRect();
     div.append(canvas);
     this.$parent.append(div);
-    this.flowchart && this.flowchart.modules.push(this);
 }
 BaseModule.prototype.createdragableRect = function() {
     // 创建连接点
@@ -143,6 +141,7 @@ BaseModule.prototype.createdragableRect = function() {
         this.flowchart.lines.push(line);
         this.startModuleId = nowId;
         event.dataTransfer.effectAllowed= 'copy';
+        // firefox 需要设置Data否则后续事件不会触发
         event.dataTransfer.setData('startModuleId', nowId);
         this.isLinging = true;
     });
@@ -268,8 +267,8 @@ BaseModule.prototype.autoScroll = function(dir) {
     if (dir === 'top' ) {
         this.timer = setInterval(()=> {
             let disTop = this.flowchart.scrollParent.scrollTop();
-            this.flowchart.scrollParent.scrollTop(disTop - stepD);
-            if (disTop === 0 || !this.isDrag) {
+            this.flowchart.scrollParent.scrollTop(Math.max(disTop - stepD, 0));
+            if (disTop <= 0 || !this.isDrag) {
                 this.stopScroll();
             };
         }, 60)
@@ -277,17 +276,17 @@ BaseModule.prototype.autoScroll = function(dir) {
         this.timer = setInterval(()=> {
             let disTop = this.flowchart.scrollParent.scrollTop(),
                 scrollParentHeight = this.flowchart.scrollParent.heightValue || this.flowchart.scrollParent.height();
-            if (disTop + scrollParentHeight == this.flowchart.height || !this.isDrag) {
+            if (disTop + scrollParentHeight >= this.flowchart.height || !this.isDrag) {
                 // 滚动距离加屏幕可显示距离 为整个画布距离时 则滑到底
                 this.stopScroll();
             };
-            this.flowchart.scrollParent.scrollTop(disTop + stepD);
+            this.flowchart.scrollParent.scrollTop(disTop + Math.min(stepD, this.flowchart.height - scrollParentHeight));
         }, 60)
     } else if (dir === 'left' ) {
         this.timer = setInterval(() => {
             let disLeft = this.flowchart.scrollParent.scrollLeft();
-            this.flowchart.scrollParent.scrollLeft(disLeft - stepD);
-            if (disLeft === 0 || !this.isDrag) {
+            this.flowchart.scrollParent.scrollLeft(Math.max(disLeft - stepD, 0));
+            if (disLeft <= 0 || !this.isDrag) {
                 this.stopScroll();
             }
         }, 60)
@@ -295,10 +294,10 @@ BaseModule.prototype.autoScroll = function(dir) {
         this.timer = setInterval(() => {
             let disLeft = this.flowchart.scrollParent.scrollLeft(),
                 scrollParentWidth = this.flowchart.scrollParent.widthValue || this.flowchart.scrollParent.width();
-            if (disLeft + scrollParentWidth >= this.flowchart.width) {
+            if (disLeft + scrollParentWidth >= this.flowchart.width || !this.isDrag) {
                 this.stopScroll();
             }
-            this.flowchart.scrollParent.scrollLeft(disLeft + stepD);
+            this.flowchart.scrollParent.scrollLeft(disLeft + Math.min(stepD, this.flowchart.width - scrollParentWidth));
         }, 60)
     }
 }
@@ -307,7 +306,7 @@ BaseModule.prototype.stopScroll = function() {
     this.isAutoScroll = false;
 }
 
-BaseModule.prototype.moveStart = function(event) {
+BaseModule.prototype.moveStart = function(event, position) {
     if ($(event.target).is(this.$setting) || $(event.target).hasClass('dragableRect')) return;
     this.isDrag = true;
     this.stopScroll()
@@ -316,16 +315,24 @@ BaseModule.prototype.moveStart = function(event) {
     this.startmouseY = event.pageY;
     let scrollDistance = this.flowchart.scrollDistance();
     // 鼠标跟随模块的点
-    this.followPoint = {
-        relativeX: event.pageX - this.originX + scrollDistance.scrollLeft - this.x,
-        relativeY: event.pageY - this.originY + scrollDistance.scrollTop - this.y
+    if (position === 'center') {
+        this.followPoint = {
+            relativeX: this.width /2,
+            relativeY: this.height/2
+        }
+    } else {
+        this.followPoint = {
+            relativeX: event.pageX - this.originX + scrollDistance.scrollLeft - this.x,
+            relativeY: event.pageY - this.originY + scrollDistance.scrollTop - this.y
+        }
     }
+   
 
 }
 BaseModule.prototype.moveEnd = function(event) {
     this.isDrag = false;
     if (event.pageX == this.startmouseX && event.pageY == this.startmouseY && this.hasSetting) {
-        var e = $.Event('modulesetting', { module: this })
+        var e = $.Event('modulesetting', { module: Object.assign(this)})
         this.flowchart.canvas.triggerHandler(e)
     }
     this.stopScroll()

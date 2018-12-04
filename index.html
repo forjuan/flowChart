@@ -37,27 +37,47 @@
         .dragableRect {
           right: -4px;
         }
-        .dragableRect.leftRect{
+        .dragableRect.leftRect {
           left: -4px;
+        }
+        .dragableRect.rightRect:hover {
+          cursor: pointer;
+        }
+        #copyMove {
+          position: absolute;
+          left: 0px;
+          top: -2000px;
+          opacity: 0;
         }
         /* .dragableRect.connected {
           background-color: green;
         } */
+
+
+        .button {
+          display: inline-block;
+          border: 1px solid;
+          width: 100px;
+          line-height: 2;
+          background-color: lightblue;
+          text-align: center;
+        }
     </style>
   </head>
   <body>
     <h1>canvas flow chart</h1>
     <h3>普通模块</h3>
+    <span id="copyMove">fdfd</span>
     <p>
-      <label>普通模块名称</label><input id="moduleName" type="text">
-      <button id="createModule">创建模块</button>
+      <label>普通模块名称</label> <input id="moduleName" type="text">
+      <!-- firefox can not drag button  -->
+      <div class="button" id="createModule" draggable="true">创建模块</div>
     </p>
     <h3>分支模块</h3>
     <p>
       <label>分支模块名称</label><input id="branchModuleName" type="text">
       <br/>
-      <button id="createModuleBranch">创建分支模块</button>
-      <button id="createBranch">创建分支子模块</button>
+      <span class="button" id="createModuleBranch" draggable="true">创建分支模块</span>
 
     </p>
 
