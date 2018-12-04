@@ -8,7 +8,6 @@ $('#createModule').on('dragstart', function(event) {
      // 拖动创建普通模块
      var text = $('#moduleName').val();
      var obj = text ? {text}: {};
-     console.log('dragStart')
    
      event.originalEvent.dataTransfer.setDragImage(document.getElementById('copyMove'),0,0);
      flowchart.createModule(Object.assign(obj, {
