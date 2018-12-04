@@ -1,32 +1,30 @@
 function BaseModule (options = {}) {
     let ratio = getRatio(); //canvas 渲染像素倍率
-    let defaultOpt = {
-        id: 'module' + new Date().getTime(),
-        isFirst: false, //是否为开始模块
-        isLast: false, // 是否为结束模块
-        $parent: $('#bgcontainer'),
-        hasDelete: false,
-        hasSetting: false,
-        ratio,
-        text: '标题',
-        width: 100,
-        height: 30,
-        deleteWidth: 10,
-        color: '#333',
-        fontColor: '#000',
-        fontSize: 12,
-        textX: 5, //文字据左边偏移
-        canvasX: 0, //canvas x 坐标
-        canvasY: 0,
-        originX: 0,
-        originY: 0,
-        x: 0, 
-        y: 0,
-        containerHeight: 0, //有子模块是整体高度,
-        type: 'normal'
-    }
+    // this这样属性才能被继承
+    this.feId = 'module' + new Date().getTime();
+    this.isLast = false; // 是否为结束模块
+    this.isFirst = false; //是否为开始模块
+    this.$parent = $('#bgcontainer');
+    this.hasDelete = false;
+    this.hasSetting = false;
+    this.ratio = ratio;
+    this.text = '标题';
+    this.width = 100;
+    this.height = 30;
+    this.deleteWidth = 10;
+    this.canvasX = 0; //canvas x 坐标
+    this.canvasY = 0;
+    this.x = 0;
+    this.y = 0;
+    this.containerHeight = 0; //有子模块是整体高度,
+    this.feType = 'normal';
+    this.fontSize = 14;
+    this.textX = 5; //文字据左边偏移
+    this.color =  '#333';
+    this.fontColor = '#000';
+    
+    Object.assign(this, options);
 
-    Object.assign(this, defaultOpt, options);
     this.fontSize = this.fontSize * ratio;
     this.text = options.text ? options.text : this.isFirst ? '开始': (this.isLast ? '结束': '标题');
     this.textX = this.textX * ratio;
@@ -76,8 +74,8 @@ BaseModule.prototype.drawModule = function() {
 }
 BaseModule.prototype.init = function() {
     // 创建一个div元素包含canvas元素
-    var div = $(`<div id="${this.id}" draggable="false" class="basemodule ${this.className}" style="position: absolute; z-index: 1;left: ${this.x}px; top: ${this.y}px; width: ${this.width}px; height: ${this.height}px;"></div>`);
-    var canvas = $(`<canvas id="canvas${this.id}" width=${this.width} height=${this.height}></canvas>`);
+    var div = $(`<div id="${this.feId}" draggable="false" class="basemodule ${this.className}" style="position: absolute; z-index: 1;left: ${this.x}px; top: ${this.y}px; width: ${this.width}px; height: ${this.height}px;"></div>`);
+    var canvas = $(`<canvas id="canvas${this.feId}" width=${this.width} height=${this.height}></canvas>`);
     this.div = div;
     
     this.ctx = canvas[0].getContext('2d');
@@ -92,7 +90,7 @@ BaseModule.prototype.init = function() {
         var width = this.deleteWidth;
         var rx = 10;
         var ty = (this.height - width)/2;
-        var $delete = $(`<div id="delete${this.id}"style="position: absolute; right: ${rx}px; top: ${ty}px; width: ${width}px; height: ${width}px"></div>`);
+        var $delete = $(`<div id="delete${this.feId}"style="position: absolute; right: ${rx}px; top: ${ty}px; width: ${width}px; height: ${width}px"></div>`);
         var canvasDelete = $(`<canvas style="position: absolute; left: 0px; top:0px" width=${width} height=${width}></canvas>`);
         this.deletectx = canvasDelete[0].getContext('2d');
         this.delete = $delete;
@@ -120,22 +118,22 @@ BaseModule.prototype.createdragableRect = function() {
         this.div.append(rightdiv);
     }
 
-    $('body').on('dragstart', `#${this.id}>.dragableRect.rightRect`, (event) => {
+    $('body').on('dragstart', `#${this.feId}>.dragableRect.rightRect`, (event) => {
         event = event.originalEvent;
         // 连线只能从模块右边开始连线
         let nowId = $(event.target).parent().attr('id');
-        let line = this.flowchart.lines.find(e => e.start && nowId == e.start.id);
+        let line = this.flowchart.lines.find(e => e.start && nowId == e.start.feId);
         if (line) return ;
 
         var elementPro = '';
-        line = new Baseline({ originX: this.originX, originY: this.originY});
+        line = new Baseline({ originX: this.flowchart.originX, originY: this.flowchart.originY});
         if ($(event.target).hasClass('leftRect')) {
             elementPro = 'end';
         } else {
             elementPro = 'start';
         }
         line[elementPro] = {
-            id: nowId
+            feId: nowId
         };
         line.lineCoordinate(this.flowchart.scrollDistance());
         this.flowchart.lines.push(line);
@@ -152,10 +150,10 @@ BaseModule.prototype.createdragableRect = function() {
         // 不阻止默认行为，否则不能drop
         event.preventDefault();
         let scrollDistance = this.flowchart.scrollDistance();
-        let x = event.pageX - this.originX + scrollDistance.scrollLeft, y = event.pageY - this.originY + scrollDistance.scrollTop;
+        let x = event.pageX - this.flowchart.originX + scrollDistance.scrollLeft, y = event.pageY - this.flowchart.originY + scrollDistance.scrollTop;
         
         let nowId = this.startModuleId;
-        if (nowId != this.id) return;
+        if (nowId != this.feId) return;
             // 非指定元素上  不能放置
             if ($(event.target).hasClass('leftRect') && !this.contains(nowId, event.target)) {
             event.dataTransfer.dropEffect = 'copy';
@@ -165,13 +163,13 @@ BaseModule.prototype.createdragableRect = function() {
 
         this.flowchart.lines.forEach(e => { 
             if (e.isEnd) return;
-            if(e.start && e.start.id == nowId) {
+            if(e.start && e.start.feId == nowId) {
                 e.update({ex: x, ey: y});
             }
         });
         this.flowchart.drawLines();
     });
-    $('body').on('dragend', `#${this.id}>.dragableRect.rightRect`, (event) => {
+    $('body').on('dragend', `#${this.feId}>.dragableRect.rightRect`, (event) => {
         // 如果没有降落在合适的位置， 取消该连线
         event = event.originalEvent;
         this.isLinging = false;
@@ -179,7 +177,7 @@ BaseModule.prototype.createdragableRect = function() {
         if (!this.flowchart.lines.find(line => !line.isEnd)) return;
         let myline = this.flowchart.lines.find((line) => {
             if (line.isEnd) return false;
-            if (this.id == line.start.id) {
+            if (this.feId == line.start.feId) {
                 line.destroy();
                 return true;
             }
@@ -196,18 +194,18 @@ BaseModule.prototype.createdragableRect = function() {
         // 找到设置的id  找到line
         let id = this.startModuleId,
             nowId = $(event.target).parent().attr('id');
-        let fmodule = this.flowchart && this.flowchart.modules.find(mod => mod.id == nowId) || {};      
+        let fmodule = this.flowchart && this.flowchart.modules.find(mod => mod.feId == nowId) || {};      
         let x = fmodule.x, y = fmodule.y + fmodule.height/2;
         if (id == nowId) return;
         this.flowchart && this.flowchart.lines.forEach(e => { 
             if (e.isEnd) return;
-            if (e.start && e.start.id == id) {
+            if (e.start && e.start.feId == id) {
                 e.setPoint({
-                    end: { id: nowId }
+                    end: { feId: nowId }
                 });
-                let mostart = this.flowchart.modules.find(start => start.id == id) || {};
-                let monext = this.flowchart.modules.find(next => next.id == nowId) || {};
-                mostart.nextId = monext.id;
+                let mostart = this.flowchart.modules.find(start => start.feId == id) || {};
+                let monext = this.flowchart.modules.find(next => next.feId == nowId) || {};
+                mostart.feNextId = monext.feId;
                 e.update({ex: x, ey: y});
             }
         });
@@ -322,8 +320,8 @@ BaseModule.prototype.moveStart = function(event, position) {
         }
     } else {
         this.followPoint = {
-            relativeX: event.pageX - this.originX + scrollDistance.scrollLeft - this.x,
-            relativeY: event.pageY - this.originY + scrollDistance.scrollTop - this.y
+            relativeX: event.pageX - this.flowchart.originX + scrollDistance.scrollLeft - this.x,
+            relativeY: event.pageY - this.flowchart.originY + scrollDistance.scrollTop - this.y
         }
     }
    
@@ -350,8 +348,8 @@ BaseModule.prototype.moveDrag = function(event) {
     // 在拖拽过程中
     let scrollDistance = this.flowchart.scrollDistance();
     // originx canvas距离页面左边的距离
-    this.x = event.pageX + scrollDistance.scrollLeft - this.originX - this.followPoint.relativeX;
-    this.y = event.pageY + scrollDistance.scrollTop - this.originY- this.followPoint.relativeY;
+    this.x = event.pageX + scrollDistance.scrollLeft - this.flowchart.originX - this.followPoint.relativeX;
+    this.y = event.pageY + scrollDistance.scrollTop - this.flowchart.originY- this.followPoint.relativeY;
     let width = this.containerWidth || this.width; //暂时没有containerWidth, 预留
     let height = this.containerHeight || this.height;
    
@@ -377,7 +375,7 @@ BaseModule.prototype.dragDom = function() {
     dragableRect.length && dragableRect.forEach(rect => {
         this.flowchart.lines.forEach(line => {
             let rectClass = '.'+ rect.className.replace(' ', '.');
-            if ($(`#${line.start.id} ${rectClass}`).is($(rect)) || $(`#${line.end.id} ${rectClass}`).is($(rect))) {
+            if ($(`#${line.start.feId} ${rectClass}`).is($(rect)) || $(`#${line.end.feId} ${rectClass}`).is($(rect))) {
                 line.lineCoordinate(this.flowchart.scrollDistance());
             } 
         });
@@ -387,49 +385,46 @@ BaseModule.prototype.dragDom = function() {
 BaseModule.prototype.destroy = function() {
     //  删除相关联的线
     // let line = lines.find((line) => line.start.id == this.id || line.end.id == this.id);
-    this.flowchart.deleteRelaLines(this.id, this.children);
+    this.flowchart.deleteRelaLines(this.feId, this.children);
     this.div.remove();
     // 还没消除本身对象
-    this.flowchart.modules = this.flowchart.modules.filter(item => item.id !== this.id);
+    this.flowchart.modules = this.flowchart.modules.filter(item => item.feId !== this.feId);
 }
 
 
 // 菜单模块
 function ContainModule(options={}) {
-    let containOpt = {
-        id: 'containModule' + new Date().getTime(),
-        canbeEnd: true,
-        canbeStart: false,
-        hasSetting: true,
-        childrenGap: 10,
-        type: 'branchModule',
-        children: []
-    }
-    Object.assign(this, containOpt, options);
+    this.feId = 'containModule' + new Date().getTime();
+    this.canbeEnd = true;
+    this.canbeStart = false;
+    this.hasSetting = true;
+    this.childrenGap = 10;
+    this.feType = 'branchModule';
+    this.children = [];
+
+    Object.assign(this, options);
     this.init();
     this.containDraw();
-    this.addBranch({id: 'defaultChild', text: '请添加分支', canbeStart: false})
+    this.addBranch({feId: 'defaultChild', text: '请添加分支', canbeStart: false})
 }
 
 ContainModule.prototype = new BaseModule();
 
 ContainModule.prototype.addBranch = function(options) {
-    let defaultModule = this.children.length && this.children.find(child => child.id == 'defaultChild');
+    let defaultModule = this.children.length && this.children.find(child => child.feId == 'defaultChild');
     if (defaultModule) {
         defaultModule.destroy();
-        this.children = this.children.filter(child => child.id != 'defaultChild');
+        this.children = this.children.filter(child => child.feId != 'defaultChild');
     }
     options = Object.assign(options, { 
-        $parent: $(`#${this.id}`),
+        $parent: $(`#${this.feId}`),
         flowchart,
-        parentId: this.id, 
+        parentId: this.feId, 
         parentwidth: this.width, 
         parentHeight: this.height, 
         gap: this.childrenGap, 
         childrenLength: this.children.length,
-        originX: this.originX,
-        originY: this.originY,
-        containerId: this.id
+        containerId: this.feId
     })
     let mod = new ChildModule(options);
     this.childrenHeight = mod.height;
@@ -438,7 +433,7 @@ ContainModule.prototype.addBranch = function(options) {
     return mod;
 }
 ContainModule.prototype.containDraw = function() {
-    $(`#${this.id}`).css({
+    $(`#${this.feId}`).css({
         boxSizing: 'border-box',
         border: '1px solid #333',
         backgroundColor: 'rgba(255, 255, 255, 0.4)'
@@ -446,12 +441,12 @@ ContainModule.prototype.containDraw = function() {
 }
 ContainModule.prototype.resize = function() {
     this.containerHeight = this.height + (this.children.length+1) * this.childrenGap + this.children.length * this.childrenHeight;
-    $(`#${this.id}`).css({height: this.containerHeight});
+    $(`#${this.feId}`).css({height: this.containerHeight});
 }
 
 ContainModule.prototype.removeChild = function(moduleId) {
     this.children = this.children.filter((child) => {
-        if(child.id == moduleId) {
+        if(child.feId == moduleId) {
             child.destroy();
         } else {
             return child;
@@ -462,11 +457,11 @@ ContainModule.prototype.removeChild = function(moduleId) {
 ContainModule.prototype.destroy = function() {
     //  删除相关联的线
     // let line = lines.find((line) => line.start.id == this.id || line.end.id == this.id);
-    this.flowchart.deleteRelaLines(this.id, this.children);
+    this.flowchart.deleteRelaLines(this.feId, this.children);
     this.div.remove();
     // 还没消除本身对象
     let modules = this.flowchart.modules;
-    this.flowchart.modules = this.flowchart.modules.filter(item => item.id !== this.id);
+    this.flowchart.modules = this.flowchart.modules.filter(item => item.feId !== this.feId);
     this.removeChildren();
 }
 
@@ -478,21 +473,20 @@ ContainModule.prototype.removeChildren = function() {
 
 // 被包含菜单的子模块
 function ChildModule(options={}) {
-    let childModuleOpt = Object.assign({
-        id: `childModule${new Date().getTime()}`,
-        className: 'childModule',
-        canbeEnd: false,
-        canbeStart: true,
-        hasDelete: false,
-        hasSetting: false,
-        canDrag: false,
-        gap: 10,
-        width: 80,
-        height: 20,
-        x: 10,
-        y: 40,
-        type: 'branch'
-    }, options);
+    this.id = `childModule${new Date().getTime()}`;
+    this.className = 'childModule';
+    this.canbeEnd = false;
+    this.canbeStart = true;
+    this.hasDelete = false;
+    this.hasSetting = false;
+    this.canDrag = false;
+    this.gap = 10;
+    this.width = 80;
+    this.height = 20;
+    this.x = 10;
+    this.y = 40;
+    this.feType = 'branch';
+    let childModuleOpt = Object.assign(this, options);
     childModuleOpt.width = childModuleOpt.parentwidth - childModuleOpt.gap * 2;
     childModuleOpt.height = childModuleOpt.parentHeight - childModuleOpt.gap;
     Object.assign(this, childModuleOpt);
@@ -504,7 +498,7 @@ function ChildModule(options={}) {
 }
 ChildModule.prototype = new BaseModule();
 ChildModule.prototype.childDraw = function() {
-    $(`#${this.id}`).css({
+    $(`#${this.feId}`).css({
         backgroundColor: 'rgba(238, 238, 238, 0.5)'
     })
 }

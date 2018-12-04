@@ -12,7 +12,6 @@ function Flowchart(options={}) {
     this.scrollParent = $(options.scrollParent) || this.canvas.parent().parent();
     this.init();
     this.initEvent();
-
 }
 
 Flowchart.prototype.init = function() {
@@ -35,21 +34,20 @@ Flowchart.prototype.init = function() {
 Flowchart.prototype.deleteLine = function(line) {
     if(!line) return;
     let allModules = this.modules || [];
-    let cMod = allModules.find(item => item.id == line.start.id) || {};
-    cMod.nextBid = null;
-    cMod.nextId = null;
-    this.lines = this.lines.filter((li={}) => li.id &&line.id != li.id);
-    let endId = line.end && line.end.id;
-    let otherEnd = this.lines.find((li={}) => li.end && endId == li.end.id);
+    let cMod = allModules.find(item => item.feId == line.start.feId) || {};
+    cMod.feNextId = null;
+    this.lines = this.lines.filter((li={}) => li.feId &&line.feId != li.feId);
+    let endId = line.end && line.end.feId;
+    let otherEnd = this.lines.find((li={}) => li.end && endId == li.end.feId);
     if (!otherEnd) $(`#${endId} .dragableRect.leftRect`).css({backgroundColor: 'rgba(255, 255, 255, 0.5)'});
     this.drawLines();
 }
 Flowchart.prototype.deleteRelaLines = function(moduleId, children=[]) {
     let ids = [moduleId],
     delines = [];
-    children.forEach(child => ids.push(child.id));
+    children.forEach(child => ids.push(child.feId));
     ids.forEach(id => {
-        delines = delines.concat(this.lines.filter(line => line.start.id == id || line.end.id == id));
+        delines = delines.concat(this.lines.filter(line => line.start.feId == id || line.end.feId == id));
     });
     delines.forEach(deline => this.deleteLine(deline));
 }
@@ -81,7 +79,7 @@ Flowchart.prototype.createModule = function(options) {
             originX: this.originX, 
             originY: this.originY,
             flowchart: this,
-            type: options.type
+            feType: options.feType
         });
         return this.creatingModule;
     }
@@ -89,27 +87,27 @@ Flowchart.prototype.createModule = function(options) {
 Flowchart.prototype.createRealModule = function(options, shouldInSave=true) {
     var newmodule = null,
         containModule = null,
-        type = options.type || 'normal';
-    if (type == 'normal') {
+        feType = options.feType || 'normal';
+    if (feType == 'normal') {
          Object.assign(options, { 
              originX: this.originX, 
              originY: this.originY,
              flowchart: this,
-             type
+             feType
          });
         newmodule = new BaseModule(options);
         newmodule.init();
-    } else if (type == 'branchmodule') {
+    } else if (feType == 'branchmodule') {
          Object.assign(options, { 
              originX: this.originX, 
              originY: this.originY,
              flowchart: this,
-             type
+             feType
          });
         newmodule = new ContainModule(options);
-    } else if (type == 'branch' && options.parentId) {
+    } else if (feType == 'branch' && options.feParentId) {
         // 不应该提供这种创建分支的方法
-        let mo = this.modules && this.modules.find(item=> item.id && item.id == options.parentId);
+        let mo = this.modules && this.modules.find(item=> item.feId && item.feId == options.feParentId);
         if (mo && typeof mo.addBranch == 'function') {
             newmodule = mo.addBranch(options);
         }
@@ -124,15 +122,15 @@ Flowchart.prototype.createRealModule = function(options, shouldInSave=true) {
     return newmodule;
 }
 Flowchart.prototype.updateModule = function(options) {
-    let mo = this.modules.find(item => item.id === options.id);
+    let mo = this.modules.find(item => item.feId === options.feId);
     mo.update(options);
 }
 Flowchart.prototype.removeChildModule = function(parentId, childId) {
-    let parent = this.modules.find(item => item.id === parentId);
+    let parent = this.modules.find(item => item.feId === parentId);
     parent.removeChild(childId);
 }
 Flowchart.prototype.removeChildren = function(parentId) {
-    let parent = this.modules.find(item => item.id === parentId);
+    let parent = this.modules.find(item => item.feId === parentId);
     parent.removeChildren();
 }
 
@@ -207,12 +205,23 @@ Flowchart.prototype.initEvent = function() {
     $('body').on('mousemove', this.onLineBind);
     // 聚焦连线
     $('body').on('click', this.onLineClickBind);
-     //删除连线
+    //删除连线
     $('body').on('keyup', this.deleteLineBind);
-    // dragenter
+    // window resize change
+    $(window).on('resize', function () {
+        self.originX = self.canvas.offset().left;
+        self.originY = self.canvas.offset().top;
+        // module使用flowchart的originX ,line需要重新设置
+        self.lines.forEach(line => {
+            line.originX = self.originX;
+            line.originY = self.originY;
+        })
+    })
+
+    // dragenter  拖拽进画布
    this.scrollParent.on('dragenter', function(ev) {
         ev.preventDefault();
-        if (self.creatingModule && self.creatingModule.type && !self.creatingModule.moveStart) {
+        if (self.creatingModule && self.creatingModule.feType && !self.creatingModule.moveStart) {
             let scrollDistance = self.scrollDistance(),
                 x = ev.pageX - self.originX + scrollDistance.scrollLeft,
                 y = ev.pageY - self.originY + scrollDistance.scrollTop;
@@ -233,9 +242,12 @@ Flowchart.prototype.initEvent = function() {
         if (self.creatingModule && self.creatingModule.moveEnd) {
             self.creatingModule.moveEnd(ev);
             let obj = Object.assign({}, self.creatingModule);
-            delete obj.id;
+            delete obj.feId;
+            //创建module时会根据ratio重新计算
+            if (obj.fontSize) obj.fontSize = obj.fontSize / obj.ratio;
+            if (obj.textX) obj.textX = obj.textX / obj.ratio; 
             // 创建一个Module在modules中， 不能用creatingModule，否则设为null后， modules中的引用也被设置为null
-            self.modules.push(self.createRealModule(obj));
+            self.createRealModule(obj);
             self.creatingModule.destroy();
             self.creatingModule.children && self.creatingModule.children.forEach(item => self.modules.push(item));
             self.creatingModule = null;
@@ -259,15 +271,15 @@ Flowchart.prototype.save = function () {
     let mos = [];
     this.modules.forEach(item => {
       let obj = {
-        id: item.id,
-        nextId: item.nextId,
-        parentId: item.parentId,
+        feId: item.feId,
+        feNextId: item.feNextId,
+        feParentId: item.feParentId,
         text: item.text,
         viewInfo: JSON.stringify({
-          type: item.type,
-          id: item.id,
-          nextId: item.nextId,
-          parentId: item.parentId,
+          feType: item.feType,
+          feId: item.feId,
+          feNextId: item.feNextId,
+          feParentId: item.feParentId,
           x: item.x,
           y: item.y,
           isFirst: item.isFirst,
@@ -288,8 +300,8 @@ Flowchart.prototype.restore = function(modules = []) {
     if (!localStorage.getItem('modules')) return;
     modules = JSON.parse(localStorage.getItem('modules'));
     // 先恢复父模块和普通模块
-    let childModules = modules.filter(item => item.type === 'branch');
-    let otherModules = modules.filter(item => item.type !== 'branch')
+    let childModules = modules.filter(item => item.feType === 'branch');
+    let otherModules = modules.filter(item => item.feType !== 'branch')
     otherModules.forEach(item => moduleRestore.call(this, item));
     childModules.forEach(item => moduleRestore.call(this, item));
     
@@ -297,10 +309,10 @@ Flowchart.prototype.restore = function(modules = []) {
         var obj = Object.assign(item, JSON.parse(item.viewInfo));
         let moduleItem = this.createRealModule(obj);
         setTimeout(() => {
-            if (obj.nextId) {
+            if (obj.feNextId) {
                 var line = new Baseline({ originX: this.originX, originY: this.originY});
-                line.start = { id: obj.id };
-                line.end = { id: obj.nextId};
+                line.start = { feId: obj.feId };
+                line.end = { feId: obj.feNextId};
                 line.styleEndPonit();
                 line.lineCoordinate(this.scrollDistance());
                 lines.push(line);

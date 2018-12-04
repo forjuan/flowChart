@@ -1,6 +1,6 @@
 function Baseline(options={}) {
     let defaultOpts = {
-        id: 'line' + new Date().getTime(),
+        feId: 'line' + new Date().getTime(),
         originX: 0,
         originY: 0,
         isEnd: false,
@@ -18,7 +18,7 @@ Baseline.prototype.setPoint = function (opt={}) {
     };
 }
 Baseline.prototype.styleEndPonit = function() {
-    $(`#${this.end.id} .dragableRect.leftRect`).css({
+    $(`#${this.end.feId} .dragableRect.leftRect`).css({
         backgroundColor: 'green'
     })
 }
@@ -41,13 +41,13 @@ Baseline.prototype.lineCoordinate = function(scrollDistance = {}) {
     let scrollLeft = scrollDistance.scrollLeft || 0,
         scrollTop = scrollDistance.scrollTop || 0;
     if (this.start) {
-        let startRect = $(`#${this.start.id} .rightRect`)[0],
+        let startRect = $(`#${this.start.feId} .rightRect`)[0],
             offset = $(startRect).offset();
         this.sx = offset.left - this.originX + scrollLeft + $(startRect).width()/2;
         this.sy = offset.top - this.originY + scrollTop + $(startRect).height()/2;
     }
     if (this.end) {
-        let endRect = $(`#${this.end.id} .leftRect`)[0],
+        let endRect = $(`#${this.end.feId} .leftRect`)[0],
             offset = $(endRect).offset();
         this.ex = offset.left - this.originX + scrollLeft + $(endRect).width()/2;
         this.ey = offset.top -  this.originY + scrollTop + $(endRect).height()/2;

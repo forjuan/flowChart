@@ -12,7 +12,7 @@ $('#createModule').on('dragstart', function(event) {
    
      event.originalEvent.dataTransfer.setDragImage(document.getElementById('copyMove'),0,0);
      flowchart.createModule(Object.assign(obj, {
-         type: 'normal',
+         feType: 'normal',
          hasSetting: true,
          hasDelete: true, 
          isDragCreate: true
@@ -28,7 +28,7 @@ $('#createModuleBranch').on('dragstart', function(event) {
     var obj = text ? {text}: {};
     event.originalEvent.dataTransfer.setDragImage(document.getElementById('copyMove'),0,0);
     flowchart.createModule(Object.assign(obj, {
-        type: 'branchmodule', 
+        feType: 'branchmodule', 
         hasSetting: true,
         hasDelete: true, 
         isDragCreate: true //拖动创建
@@ -47,8 +47,8 @@ $('#update').click(function() {
 $('#addChild').click(function() {
     // 添加子模块, childModule为null则说明没创建对
     let childModule = flowchart.createModule({
-        type: 'branch',
-        parentId: currentModule.id, //父级模块id 必须
+        feType: 'branch',
+        feParentId: currentModule.feId, //父级模块id 必须
         text: $('#childModule').val()
     })
     let input = $(`<input value=${childModule.text}>`);
