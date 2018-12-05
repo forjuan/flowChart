@@ -412,7 +412,7 @@ function ContainModule(options={}) {
 
 ContainModule.prototype = new BaseModule();
 ContainModule.prototype.initDraw = function() {
-    if (this.feId) {
+    if (!this.feId) {
         let random = this.flowchart.moduleRandomIds.shift(0);
         if (!random) console.log('线段超出最大值1000')
         this.feId = 'containModule' + new Date().getTime() + random;
