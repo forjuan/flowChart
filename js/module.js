@@ -74,7 +74,7 @@ BaseModule.prototype.drawModule = function() {
 BaseModule.prototype.init = function() {
     if (!this.feId) {
         let random = this.flowchart.moduleRandomIds.shift(0);
-        if (!random) console.log('线段超出最大值1000')
+        if (!random) console.log('模块数量超出最大值1000')
         this.feId = 'module' + new Date().getTime() + random;
     }
     // 创建一个div元素包含canvas元素
@@ -405,7 +405,6 @@ function ContainModule(options={}) {
     this.childrenGap = 10;
     this.feType = 'branchmodule';
     this.children = [];
-    this.shouldCreateDefault = true;
 
     Object.assign(this, options);
 }
@@ -414,22 +413,21 @@ ContainModule.prototype = new BaseModule();
 ContainModule.prototype.initDraw = function() {
     if (!this.feId) {
         let random = this.flowchart.moduleRandomIds.shift(0);
-        if (!random) console.log('线段超出最大值1000')
+        if (!random) console.log('模块数量超出最大值1000')
         this.feId = 'containModule' + new Date().getTime() + random;
     }
 
     this.init();
     this.containDraw();
-    if (this.shouldCreateDefault) {
-        let mod = this.addBranch({feId: 'defaultChild', text: '请添加分支', canbeStart: false, isDefaultBranch: true})
-        mod.initDraw();
-    }
+    let mod = this.addBranch({feId: 'defaultChild' + new Date().getTime(), text: '请添加分支', canbeStart: false, isDefaultBranch: true})
+    mod.initDraw();
 }
 ContainModule.prototype.addBranch = function(options) {
-    let defaultModule = this.children.length && this.children.find(child => child.feId == 'defaultChild');
-    if (defaultModule) {
+    // ~  对-1取反得 0，其他值都不为0；
+    let defaultModule = this.children.length && this.children.find(child => ~child.feId.indexOf('defaultChild'));
+    if (defaultModule && (options.feId || Boolean(~options.feId.indexOf('defaultChild')))) {
         defaultModule.destroy();
-        this.children = this.children.filter(child => child.feId != 'defaultChild');
+        this.children = this.children.filter(child => !(~child.feId.indexOf('defaultChild')));
     }
     options = Object.assign(options, { 
         $parent: $(`#${this.feId}`),
@@ -511,7 +509,7 @@ ChildModule.prototype = new BaseModule();
 ChildModule.prototype.initDraw = function() {
     if (!this.feId) {
         let random = this.flowchart.moduleRandomIds.shift(0);
-        if (!random) console.log('线段超出最大值1000')
+        if (!random) console.log('模块数量超出最大值1000')
         this.feId = 'childModule' + new Date().getTime() + random;
     }
    
@@ -528,12 +526,16 @@ ChildModule.prototype.childDraw = function() {
 // // 指定子模块的初始模块
 function SpecialModule(options = {}) {
     this.feType = 'specialBranch';
-    this.shouldCreateDefault = false;
     Object.assign(this, options);
     
 }
 SpecialModule.prototype = new ContainModule();
 SpecialModule.prototype.initDraw = function() {
+    if (!this.feId) {
+        let random = this.flowchart.moduleRandomIds.shift(0);
+        if (!random) console.log('模块数量超出最大值1000')
+        this.feId = 'specialBranch' + new Date().getTime() + random;
+    }
     this.init();
     this.containDraw();
     let children = this.children.concat([]);

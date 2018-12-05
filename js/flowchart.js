@@ -147,6 +147,9 @@ Flowchart.prototype.createRealModule = function(options, shouldInSave=true) {
     if (shouldInSave && newmodule) {
         this.modules.push(newmodule)
     }
+    if (newmodule.feNextId) {
+        this.drawLines();
+    }
     return newmodule;
 }
 Flowchart.prototype.updateModule = function(options) {
@@ -280,19 +283,21 @@ Flowchart.prototype.initEvent = function() {
             if (obj.textX) obj.textX = obj.textX / obj.ratio; 
             // 重新生成， 否则id相同的元素会被删除
             delete obj.feId;
-            self.creatingModule.children && self.creatingModule.children.forEach(item => {
+            if (obj.children) obj.children = [];
+            self.creatingModule.children && self.creatingModule.children.map(item => {
                 if (item.isDefaultBranch) {
-                    return;
+                    return Object.assign({}, item);
                 }
                 delete item.feId;
                 if (item.fontSize) item.fontSize = item.fontSize / item.ratio;
                 if (item.textX) item.textX = item.textX / item.ratio; 
+                return Object.assign({}, item);
             })
             // 创建一个Module在modules中， 不能用creatingModule，否则设为null后， modules中的引用也被设置为null
             let newmodule = self.createRealModule(obj);
-            newmodule.children && newmodule.children.forEach(item => self.modules.push(item));
             self.creatingModule.destroy();
             self.creatingModule = null;
+            newmodule.children.length && newmodule.children.forEach(item =>  self.modules.push(item));
         } 
     })
     $('body').on('dragend', function(ev) {
@@ -328,6 +333,8 @@ Flowchart.prototype.save = function () {
           y: item.y,
           isFirst: item.isFirst,
           isLast: item.isLast,
+          canbeStart: item.canbeStart,
+          canbeEnd: item.canbeEnd,
           hasDelete: item.hasDelete,
           hasSetting: item.hasSetting,
           settingCallback: item.settingCallback,
@@ -353,7 +360,7 @@ Flowchart.prototype.restore = function(modules = []) {
     childModules.forEach(item => moduleRestore.call(this, item));
     
     function moduleRestore(obj) {
-        let moduleItem = this.createRealModule(Object.assign(obj, { shouldCreateDefault: false}));
+        let moduleItem = this.createRealModule(Object.assign(obj));
         setTimeout(() => {
             if (obj.feNextId) {
                 let random = this.lineRandomIds.shift(0);
