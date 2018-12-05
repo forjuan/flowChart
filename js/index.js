@@ -50,7 +50,8 @@ $('#createModuleSpecial').on('dragstart', function(event) {
         text: '时间模块',
         children: [{
             feType: 'branch',
-            text: '工作时间'
+            text: '工作时间',
+            notChange: true,
         }, {
             feType: 'branch',
             text: '非工作时间'

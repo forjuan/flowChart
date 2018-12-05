@@ -539,7 +539,7 @@ SpecialModule.prototype.initDraw = function() {
     let children = this.children.concat([]);
     this.children = [];
     children.forEach(child => {
-        let mod = this.addBranch(Object.assign(child, { canbeStart: false }))
+        let mod = this.addBranch(Object.assign(child))
         mod.initDraw();
     })
 }
