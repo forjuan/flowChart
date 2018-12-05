@@ -30,12 +30,36 @@ $('#createModuleBranch').on('dragstart', function(event) {
         feType: 'branchmodule', 
         hasSetting: true,
         hasDelete: true, 
-        isDragCreate: true //拖动创建
+        isDragCreate: true, //拖动创建,
+        text: '分支模块'
     }));
      
     //  for firefox 否则drag其他事件无法正常触发
      event.originalEvent.dataTransfer.setData('createModule', {});
 })
+$('#createModuleSpecial').on('dragstart', function(event) {
+    // 拖动创建普通包含模块
+    var text = $('#branchModuleName').val();
+    var obj = text ? {text}: {};
+    event.originalEvent.dataTransfer.setDragImage(document.getElementById('copyMove'),0,0);
+    flowchart.createModule(Object.assign(obj, {
+        feType: 'specialBranch', 
+        hasSetting: true,
+        hasDelete: true, 
+        isDragCreate: true, //拖动创建
+        text: '时间模块',
+        children: [{
+            feType: 'branch',
+            text: '工作时间'
+        }, {
+            feType: 'branch',
+            text: '非工作时间'
+        }]
+    }));
+    
+    //  for firefox 否则drag其他事件无法正常触发
+    event.originalEvent.dataTransfer.setData('createModule', {});
+});
 
 
 $('#update').click(function() {

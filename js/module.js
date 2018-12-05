@@ -1,7 +1,6 @@
 function BaseModule (options = {}) {
     let ratio = getRatio(); //canvas 渲染像素倍率
     // this这样属性才能被继承
-    this.feId = 'module' + new Date().getTime();
     this.isLast = false; // 是否为结束模块
     this.isFirst = false; //是否为开始模块
     this.$parent = $('#bgcontainer');
@@ -73,6 +72,11 @@ BaseModule.prototype.drawModule = function() {
     }
 }
 BaseModule.prototype.init = function() {
+    if (!this.feId) {
+        let random = this.flowchart.moduleRandomIds.shift(0);
+        if (!random) console.log('线段超出最大值1000')
+        this.feId = 'module' + new Date().getTime() + random;
+    }
     // 创建一个div元素包含canvas元素
     var div = $(`<div id="${this.feId}" draggable="false" class="basemodule ${this.className}" style="position: absolute; z-index: 1;left: ${this.x}px; top: ${this.y}px; width: ${this.width}px; height: ${this.height}px;"></div>`);
     var canvas = $(`<canvas id="canvas${this.feId}" width=${this.width} height=${this.height}></canvas>`);
@@ -145,7 +149,7 @@ BaseModule.prototype.createdragableRect = function() {
         this.isLinging = true;
     });
 
-    $(this.flowchart.scrollParent).on('dragover', (event) => {
+    this.flowchart && $(this.flowchart.scrollParent).on('dragover', (event) => {
         if (!this.isLinging) return false;
         event = event.originalEvent;
         // 不阻止默认行为，否则不能drop
@@ -223,8 +227,8 @@ BaseModule.prototype.inScrollParent = function(point) {
     this.flowchart.scrollParent.widthValue = width;
     this.flowchart.scrollParent.heightValue = height;
     // 矩形边界检测
-    return offset.left <= point.x && point.x <= offset.left + width &&
-            offset.top <= point.y && point.y <= offset.top + height;
+    return offset.left < point.x && point.x < offset.left + width &&
+            offset.top < point.y && point.y < offset.top + height;
 }
 
 BaseModule.prototype.moveScroll = function(event) {
@@ -395,22 +399,32 @@ BaseModule.prototype.destroy = function() {
 
 // 菜单模块
 function ContainModule(options={}) {
-    this.feId = 'containModule' + new Date().getTime();
     this.canbeEnd = true;
     this.canbeStart = false;
     this.hasSetting = true;
     this.childrenGap = 10;
-    this.feType = 'branchModule';
+    this.feType = 'branchmodule';
     this.children = [];
+    this.shouldCreateDefault = true;
 
     Object.assign(this, options);
-    this.init();
-    this.containDraw();
-    this.addBranch({feId: 'defaultChild', text: '请添加分支', canbeStart: false})
 }
 
 ContainModule.prototype = new BaseModule();
+ContainModule.prototype.initDraw = function() {
+    if (this.feId) {
+        let random = this.flowchart.moduleRandomIds.shift(0);
+        if (!random) console.log('线段超出最大值1000')
+        this.feId = 'containModule' + new Date().getTime() + random;
+    }
 
+    this.init();
+    this.containDraw();
+    if (this.shouldCreateDefault) {
+        let mod = this.addBranch({feId: 'defaultChild', text: '请添加分支', canbeStart: false, isDefaultBranch: true})
+        mod.initDraw();
+    }
+}
 ContainModule.prototype.addBranch = function(options) {
     let defaultModule = this.children.length && this.children.find(child => child.feId == 'defaultChild');
     if (defaultModule) {
@@ -419,8 +433,8 @@ ContainModule.prototype.addBranch = function(options) {
     }
     options = Object.assign(options, { 
         $parent: $(`#${this.feId}`),
-        flowchart,
-        parentId: this.feId, 
+        flowchart: this.flowchart,
+        feParentId: this.feId, 
         parentwidth: this.width, 
         parentHeight: this.height, 
         gap: this.childrenGap, 
@@ -474,7 +488,6 @@ ContainModule.prototype.removeChildren = function() {
 
 // 被包含菜单的子模块
 function ChildModule(options={}) {
-    this.feId = `childModule${new Date().getTime()}`;
     this.className = 'childModule';
     this.canbeEnd = false;
     this.canbeStart = true;
@@ -493,14 +506,42 @@ function ChildModule(options={}) {
     Object.assign(this, childModuleOpt);
     this.x = childModuleOpt.gap || 10;
     this.y = childModuleOpt.parentHeight + (childModuleOpt.childrenLength + 1) * childModuleOpt.gap + (childModuleOpt.childrenLength * childModuleOpt.height);
-
+}
+ChildModule.prototype = new BaseModule();
+ChildModule.prototype.initDraw = function() {
+    if (!this.feId) {
+        let random = this.flowchart.moduleRandomIds.shift(0);
+        if (!random) console.log('线段超出最大值1000')
+        this.feId = 'childModule' + new Date().getTime() + random;
+    }
+   
     this.init();
     this.childDraw();
 }
-ChildModule.prototype = new BaseModule();
 ChildModule.prototype.childDraw = function() {
     $(`#${this.feId}`).css({
         backgroundColor: 'rgba(238, 238, 238, 0.5)'
     })
 }
+
+
+// // 指定子模块的初始模块
+function SpecialModule(options = {}) {
+    this.feType = 'specialBranch';
+    this.shouldCreateDefault = false;
+    Object.assign(this, options);
+    
+}
+SpecialModule.prototype = new ContainModule();
+SpecialModule.prototype.initDraw = function() {
+    this.init();
+    this.containDraw();
+    let children = this.children.concat([]);
+    this.children = [];
+    children.forEach(child => {
+        let mod = this.addBranch(Object.assign(child, { canbeStart: false }))
+        mod.initDraw();
+    })
+}
+
 

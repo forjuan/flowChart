@@ -11,6 +11,7 @@ function Flowchart(options={}) {
     this.creatingModule = null;
     this.scrollParent = $(options.scrollParent) || this.canvas.parent().parent();
     this.lineRandomIds = [];
+    this.moduleRandomIds = [];
 
     // 生成一个数组，以便line 线段可以生成不重复Id
     for (let i = 0; i<= 1000; i++) {
@@ -23,6 +24,8 @@ function Flowchart(options={}) {
         }
         this.lineRandomIds.push(i);
     }
+    // moduleId同理
+    this.moduleRandomIds = this.lineRandomIds.concat([]);
     this.init();
     this.initEvent();
 }
@@ -119,12 +122,23 @@ Flowchart.prototype.createRealModule = function(options, shouldInSave=true) {
              feType
          });
         newmodule = new ContainModule(options);
+        newmodule.initDraw();
     } else if (feType == 'branch' && options.feParentId) {
         // 不应该提供这种创建分支的方法
         let mo = this.modules && this.modules.find(item=> item.feId && item.feId == options.feParentId);
         if (mo && typeof mo.addBranch == 'function') {
             newmodule = mo.addBranch(options);
+            newmodule.initDraw();
         }
+    } else if (feType == 'specialBranch') {
+        Object.assign(options, { 
+            originX: this.originX, 
+            originY: this.originY,
+            flowchart: this,
+            feType
+        });
+        newmodule = new SpecialModule(options);
+        newmodule.initDraw();
     }
     if (newmodule) {
         newmodule.drawLines = this.drawLines.bind(this);
@@ -230,6 +244,10 @@ Flowchart.prototype.initEvent = function() {
             line.originX = self.originX;
             line.originY = self.originY;
         })
+
+        // scrollParent宽高可能更改
+        this.flowchart.scrollParent.widthValue = this.flowchart.scrollParent.width();
+        this.flowchart.scrollParent.heightValue = this.flowchart.scrollParent.height();
     })
 
     // dragenter  拖拽进画布
@@ -256,14 +274,24 @@ Flowchart.prototype.initEvent = function() {
         if (self.creatingModule && self.creatingModule.moveEnd) {
             self.creatingModule.moveEnd(ev);
             let obj = Object.assign({}, self.creatingModule);
-            delete obj.feId;
+
             //创建module时会根据ratio重新计算
             if (obj.fontSize) obj.fontSize = obj.fontSize / obj.ratio;
             if (obj.textX) obj.textX = obj.textX / obj.ratio; 
+            // 重新生成， 否则id相同的元素会被删除
+            delete obj.feId;
+            self.creatingModule.children && self.creatingModule.children.forEach(item => {
+                if (item.isDefaultBranch) {
+                    return;
+                }
+                delete item.feId;
+                if (item.fontSize) item.fontSize = item.fontSize / item.ratio;
+                if (item.textX) item.textX = item.textX / item.ratio; 
+            })
             // 创建一个Module在modules中， 不能用creatingModule，否则设为null后， modules中的引用也被设置为null
-            self.createRealModule(obj);
+            let newmodule = self.createRealModule(obj);
+            newmodule.children && newmodule.children.forEach(item => self.modules.push(item));
             self.creatingModule.destroy();
-            self.creatingModule.children && self.creatingModule.children.forEach(item => self.modules.push(item));
             self.creatingModule = null;
         } 
     })
@@ -302,7 +330,8 @@ Flowchart.prototype.save = function () {
           isLast: item.isLast,
           hasDelete: item.hasDelete,
           hasSetting: item.hasSetting,
-          settingCallback: item.settingCallback
+          settingCallback: item.settingCallback,
+          isDefaultBranch: item.isDefaultBranch
         })
       };
       mos.push(obj);
@@ -315,18 +344,20 @@ Flowchart.prototype.restore = function(modules = []) {
     let lines = [];
     if (!localStorage.getItem('modules')) return;
     modules = JSON.parse(localStorage.getItem('modules'));
+    modules.map(item => Object.assign(item, JSON.parse(item.viewInfo)));
+
     // 先恢复父模块和普通模块
-    let childModules = modules.filter(item => item.feType === 'branch');
-    let otherModules = modules.filter(item => item.feType !== 'branch')
+    let childModules = modules.filter(item => item.feType === 'branch'),
+        otherModules = modules.filter(item => item.feType !== 'branch');
     otherModules.forEach(item => moduleRestore.call(this, item));
     childModules.forEach(item => moduleRestore.call(this, item));
     
-    function moduleRestore(item) {
-        var obj = Object.assign(item, JSON.parse(item.viewInfo));
-        let moduleItem = this.createRealModule(obj);
+    function moduleRestore(obj) {
+        let moduleItem = this.createRealModule(Object.assign(obj, { shouldCreateDefault: false}));
         setTimeout(() => {
             if (obj.feNextId) {
                 let random = this.lineRandomIds.shift(0);
+                if (!random) console.log('线段超出最大值1000')
                 let feId = 'line' + new Date().getTime() + random;
                 var line = new Baseline({ originX: this.originX, originY: this.originY, feId });
                 line.start = { feId: obj.feId };

@@ -15,8 +15,8 @@
           border: 1px solid gray;
         }
         .father {
-          width: 1000px;
-          height: 400px;
+          width: 100%;
+          height: 100vh;
           overflow: scroll;
           margin: 0 auto;
         }
@@ -78,8 +78,8 @@
       <label>分支模块名称</label><input id="branchModuleName" type="text">
       <br/>
       <span class="button" id="createModuleBranch" draggable="true">创建分支模块</span>
-
     </p>
+    <p><span class="button" id="createModuleSpecial" draggable="true">创建特殊分支模块</span></p>
 
     <p>设置module：
       <input id="updateModule">
@@ -87,11 +87,12 @@
       <input id="childModule">
       <button id="addChild">添加子模块</button>
     </p>
+    
 
     <button id="save">保存流程</button>
     <div class="father">
       <div id="bgcontainer"style="position:relative; width: 1800px;height: 1800px">
-        <canvas id='canvas'width="1800" height="1800"></canvas>
+        <canvas id='canvas'width="3000" height="1800"></canvas>
       </div>
     </div>
    
