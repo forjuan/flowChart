@@ -71,6 +71,11 @@ $('#crateChildren').on('click', function() {
     flowchart.removeChildren(currentModule.feId);
     flowchart.createChildren(currentModule.feId, children);
 })
+// 获取结点数
+$('#getNodes').on('click', function() {
+    flowchart.showNodes();
+    // $(this).html('获取节点数' + flowchart.getAllNodes() + '连接节点数' +  flowchart.getConnectedNodes());
+})
 
 
 $('#update').click(function() {

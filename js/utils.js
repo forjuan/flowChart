@@ -1,6 +1,6 @@
 function getRatio() {
     var canvas = $('<canvas></canvas>');
-    let context = canvas[0].getContext('2d');
+    var context = canvas[0].getContext('2d');
     
     // 屏幕的设备像素比
     var devicePixelRatio = window.devicePixelRatio || 1;

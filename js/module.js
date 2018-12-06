@@ -1,5 +1,5 @@
 function BaseModule (options = {}) {
-    let ratio = getRatio(); //canvas 渲染像素倍率
+    var ratio = getRatio(); //canvas 渲染像素倍率
     // this这样属性才能被继承
     this.isLast = false; // 是否为结束模块
     this.isFirst = false; //是否为开始模块
@@ -72,8 +72,9 @@ BaseModule.prototype.drawModule = function() {
     }
 }
 BaseModule.prototype.init = function() {
+    var self = this;
     if (!this.feId) {
-        let random = this.flowchart.moduleRandomIds.shift(0);
+        var random = this.flowchart.moduleRandomIds.shift(0);
         if (!random) console.log('模块数量超出最大值1000')
         this.feId = 'module' + new Date().getTime() + random;
     }
@@ -100,9 +101,12 @@ BaseModule.prototype.init = function() {
         this.deletectx = canvasDelete[0].getContext('2d');
         this.delete = $delete;
         resetCanvasRatio(canvasDelete, width, width, this.ratio);
-        $delete.on('click', (event) => {
+        $delete.on('click', function(event) {
             event.stopPropagation();
-            this.destroy();
+            self.destroy();
+
+            // 删除后节点数变化
+            self.flowchart.showNodes();
         })
         $delete.append(canvasDelete);
         div.append($delete);
@@ -113,6 +117,7 @@ BaseModule.prototype.init = function() {
     this.$parent.append(div);
 }
 BaseModule.prototype.createdragableRect = function() {
+    var self = this;
     // 创建连接点
     if (this.canbeEnd) {
         var leftdiv = $(`<div class="dragableRect leftRect" style="top: ${this.height/2 - 3}px"></div>`);
@@ -123,15 +128,15 @@ BaseModule.prototype.createdragableRect = function() {
         this.div.append(rightdiv);
     }
 
-    $('body').on('dragstart', `#${this.feId}>.dragableRect.rightRect`, (event) => {
+    $('body').on('dragstart', '#' + this.feId +'>.dragableRect.rightRect', function(event)  {
         event = event.originalEvent;
         // 连线只能从模块右边开始连线
-        let nowId = $(event.target).parent().attr('id');
-        let line = this.flowchart.lines.find(e => e.start && nowId == e.start.feId);
-        if (line) return ;
+        var nowId = $(event.target).parent().attr('id');
+        var line = self.flowchart.lines.find(function(line) { return line.start && nowId == line.start.feId });
+        if (line) return;
 
         var elementPro = '';
-        line = new Baseline({ originX: this.flowchart.originX, originY: this.flowchart.originY});
+        line = new Baseline({ originX: self.flowchart.originX, originY: self.flowchart.originY});
         if ($(event.target).hasClass('leftRect')) {
             elementPro = 'end';
         } else {
@@ -140,87 +145,95 @@ BaseModule.prototype.createdragableRect = function() {
         line[elementPro] = {
             feId: nowId
         };
-        line.lineCoordinate(this.flowchart.scrollDistance());
-        this.flowchart.lines.push(line);
-        this.startModuleId = nowId;
+        line.lineCoordinate(self.flowchart.scrollDistance());
+        self.flowchart.lines.push(line);
+        // for dragover access this data
+        self.flowchart.currentStartModuleId = nowId;
         event.dataTransfer.effectAllowed= 'copy';
         // firefox 需要设置Data否则后续事件不会触发
         event.dataTransfer.setData('startModuleId', nowId);
-        this.isLinging = true;
     });
 
-    this.flowchart && $(this.flowchart.scrollParent).on('dragover', (event) => {
-        if (!this.isLinging) return false;
+    this.flowchart.canvas.parent().unbind('dragover.BaseModuleNode');
+    this.flowchart.canvas.parent().bind('dragover.BaseModuleNode', function(event) {
         event = event.originalEvent;
         // 不阻止默认行为，否则不能drop
         event.preventDefault();
-        let scrollDistance = this.flowchart.scrollDistance();
-        let x = event.pageX - this.flowchart.originX + scrollDistance.scrollLeft, y = event.pageY - this.flowchart.originY + scrollDistance.scrollTop;
+        var nowId = self.flowchart.currentStartModuleId;
+        if (!nowId) return; // 不是连线触发的
+
+        var scrollDistance = self.flowchart.scrollDistance();
+        var x = event.pageX - self.flowchart.originX + scrollDistance.scrollLeft, y = event.pageY - self.flowchart.originY + scrollDistance.scrollTop;
         
-        let nowId = this.startModuleId;
-        if (nowId != this.feId) return;
-            // 非指定元素上  不能放置
-            if ($(event.target).hasClass('leftRect') && !this.contains(nowId, event.target)) {
+        // 非指定元素上  不能放置
+        if ($(event.target).hasClass('leftRect') && !self.contains(nowId, event.target)) {
             event.dataTransfer.dropEffect = 'copy';
         } else {
             event.dataTransfer.dropEffect = 'none';
         }
-
-        this.flowchart.lines.forEach(e => { 
-            if (e.isEnd) return;
-            if(e.start && e.start.feId == nowId) {
-                e.update({ex: x, ey: y});
+        self.flowchart.lines.forEach(function(line) { 
+            if (line.isEnd) return;
+            if(line.start && line.start.feId == nowId) {
+                line.update({ex: x, ey: y});
+                line.lineCoordinate(scrollDistance);
             }
         });
-        this.flowchart.drawLines();
+        self.flowchart.drawLines(scrollDistance);
     });
-    $('body').on('dragend', `#${this.feId}>.dragableRect.rightRect`, (event) => {
+    $('body').on('dragend', '#'+ this.feId + '>.dragableRect.rightRect', function(event) {
         // 如果没有降落在合适的位置， 取消该连线
         event = event.originalEvent;
-        this.isLinging = false;
+        self.isLinging = false;
         event.preventDefault();
-        if (!this.flowchart.lines.find(line => !line.isEnd)) return;
-        let myline = this.flowchart.lines.find((line) => {
-            if (line.isEnd) return false;
-            if (this.feId == line.start.feId) {
+        // 没有无终点的连线
+        if (!self.flowchart.lines.find(function (line){ return !line.isEnd})) return;
+        var myline = self.flowchart.lines.find(function(line) {
+            if (line.isEnd || line.end) return false;
+            if (self.feId == line.start.feId) {
                 line.destroy();
                 return true;
             }
             return false;
         });
-        this.flowchart.lines = this.flowchart.lines.filter((line) => line !== myline )
-        this.startModuleId = null;
-        this.flowchart.drawLines();
+        self.flowchart.lines = self.flowchart.lines.filter(function(line){return line !== myline })
+        self.startModuleId = null;
+        self.flowchart.drawLines();
     });
-    $('body').on('drop', '.dragableRect.leftRect',(event) => {
+
+    // bind事件命名空间， 防止多次重复触发
+    $('body').unbind('drop.BaseModuleNode')
+    $('body').bind('drop.BaseModuleNode', '.dragableRect.leftRect', function(event) {
         event = event.originalEvent;
         event.preventDefault();
-
         // 找到设置的id  找到line
-        let id = this.startModuleId,
+        var id = event.dataTransfer.getData('startModuleId'),
             nowId = $(event.target).parent().attr('id');
-        let fmodule = this.flowchart && this.flowchart.modules.find(mod => mod.feId == nowId) || {};      
-        let x = fmodule.x, y = fmodule.y + fmodule.height/2;
+        var fmodule = self.flowchart && self.flowchart.modules.find(function(mod) {return mod.feId == nowId}) || {};      
+        var x = fmodule.x, y = fmodule.y + fmodule.height/2;
         if (id == nowId) return;
-        this.flowchart && this.flowchart.lines.forEach(e => { 
-            if (e.isEnd) return;
-            if (e.start && e.start.feId == id) {
-                e.setPoint({
+        self.flowchart && self.flowchart.lines.forEach(function(line) { 
+            if (line.isEnd) return;
+            // 没有end点的
+            if (line.start && line.start.feId == id) {
+                line.setPoint({
                     end: { feId: nowId }
                 });
-                let mostart = this.flowchart.modules.find(start => start.feId == id) || {};
-                let monext = this.flowchart.modules.find(next => next.feId == nowId) || {};
+                var mostart = self.flowchart.modules.find(function (start) { return start.feId == id }) || {};
+                var monext = self.flowchart.modules.find(function (next) { return next.feId == nowId }) || {};
                 mostart.feNextId = monext.feId;
-                e.update({ex: x, ey: y});
+                line.update({ex: x, ey: y});
+                line.isEnd = true;
             }
         });
-        this.flowchart.drawLines();
+        self.flowchart.drawLines();
+        // 增加连线后节点数变化
+        self.flowchart.showNodes();
     });
 }
 BaseModule.prototype.inScrollParent = function(point) {
     // point 为pagex, pagey相对于整个文档的距离
     // 某个点是否在scrollparent 区域内
-    let offset = this.flowchart.scrollParent.offsetValue || this.flowchart.scrollParent.offset(),
+    var offset = this.flowchart.scrollParent.offsetValue || this.flowchart.scrollParent.offset(),
         width = this.flowchart.scrollParent.widthValue || this.flowchart.scrollParent.width(),
         height = this.flowchart.scrollParent.heightValue || this.flowchart.scrollParent.height();
     this.flowchart.scrollParent.offsetValue = offset;
@@ -234,21 +247,21 @@ BaseModule.prototype.inScrollParent = function(point) {
 BaseModule.prototype.moveScroll = function(event) {
     // 处理滚动， 如果已经在滚动不做处理
     if (this.isAutoScroll) return;
-    let point = { x: event.pageX, y: event.pageY };
+    var point = { x: event.pageX, y: event.pageY };
     // 鼠标相隔最近scrollParent的四个方向线段， 并朝该方向滚动
-    let offset = this.flowchart.scrollParent.offsetValue || this.flowchart.scrollParent.offset(),
+    var offset = this.flowchart.scrollParent.offsetValue || this.flowchart.scrollParent.offset(),
         width = this.flowchart.scrollParent.widthValue || this.flowchart.scrollParent.width(),
         height = this.flowchart.scrollParent.heightValue || this.flowchart.scrollParent.height();
-    let left = { dir:'left', start: { x: offset.left, y: offset.top }, end: { x: offset.left, y: offset.top + height }},
+    var left = { dir:'left', start: { x: offset.left, y: offset.top }, end: { x: offset.left, y: offset.top + height }},
         right = { dir:'right',start: { x: offset.left + width, y: offset.top}, end: { x: offset.left + width, y: offset.top + height}},
         top = { dir:'top',start: { x: offset.left, y: offset.top}, end: { x: offset.left + width, y: offset.top }},
         bottom = { dir:'bottom',start: { x: offset.left, y: offset.top + height }, end: { x: offset.left + width, y: offset.top + height }};
     //如果有鼠标点到两条线段的距离相同时，随机选个方向滚动 
-    let leftdis = pointToSegDist(point, left.start, left.end),
+    var leftdis = pointToSegDist(point, left.start, left.end),
         rightdis = pointToSegDist(point, right.start, right.end),
         topdis = pointToSegDist(point, top.start, top.end),
         bottomdis = pointToSegDist(point, bottom.start, bottom.end);
-    let mindis = Math.min(leftdis, rightdis, topdis, bottomdis);
+    var mindis = Math.min(leftdis, rightdis, topdis, bottomdis);
     if (topdis === mindis) {
         this.autoScroll('top')
 
@@ -263,44 +276,49 @@ BaseModule.prototype.moveScroll = function(event) {
 
 }
 BaseModule.prototype.autoScroll = function(dir) {
-    let stepD = 10; // 每次移动距离
+    var stepD = 10,
+        self = this,
+        disLeft = 0,
+        disTop = 0,
+        scrollParentHeight = 0,
+        scrollParentWidth = 0; // 每次移动距离
     // 自动进行移动， 如果停止拖拽或者运动抵达距离就停止
     clearInterval(this.timer);
     this.isAutoScroll = true;
     if (dir === 'top' ) {
-        this.timer = setInterval(()=> {
-            let disTop = this.flowchart.scrollParent.scrollTop();
-            this.flowchart.scrollParent.scrollTop(Math.max(disTop - stepD, 0));
-            if (disTop <= 0 || !this.isDrag) {
-                this.stopScroll();
+        this.timer = setInterval(function() {
+            disTop = self.flowchart.scrollParent.scrollTop();
+            self.flowchart.scrollParent.scrollTop(Math.max(disTop - stepD, 0));
+            if (disTop <= 0 || !self.isDrag) {
+                self.stopScroll();
             };
         }, 60)
     } else if (dir === 'bottom') {
-        this.timer = setInterval(()=> {
-            let disTop = this.flowchart.scrollParent.scrollTop(),
-                scrollParentHeight = this.flowchart.scrollParent.heightValue || this.flowchart.scrollParent.height();
-            if (disTop + scrollParentHeight >= this.flowchart.height || !this.isDrag) {
+        this.timer = setInterval(function() {
+            disTop = self.flowchart.scrollParent.scrollTop();
+            scrollParentHeight = self.flowchart.scrollParent.heightValue || self.flowchart.scrollParent.height();
+            if (disTop + scrollParentHeight >= self.flowchart.height || !self.isDrag) {
                 // 滚动距离加屏幕可显示距离 为整个画布距离时 则滑到底
-                this.stopScroll();
+                self.stopScroll();
             };
-            this.flowchart.scrollParent.scrollTop(disTop + Math.min(stepD, this.flowchart.height - scrollParentHeight));
+            self.flowchart.scrollParent.scrollTop(disTop + Math.min(stepD, self.flowchart.height - scrollParentHeight));
         }, 60)
     } else if (dir === 'left' ) {
-        this.timer = setInterval(() => {
-            let disLeft = this.flowchart.scrollParent.scrollLeft();
-            this.flowchart.scrollParent.scrollLeft(Math.max(disLeft - stepD, 0));
-            if (disLeft <= 0 || !this.isDrag) {
-                this.stopScroll();
+        this.timer = setInterval(function() {
+            disLeft = self.flowchart.scrollParent.scrollLeft();
+            self.flowchart.scrollParent.scrollLeft(Math.max(disLeft - stepD, 0));
+            if (disLeft <= 0 || !self.isDrag) {
+                self.stopScroll();
             }
         }, 60)
     } else if (dir === 'right') {
-        this.timer = setInterval(() => {
-            let disLeft = this.flowchart.scrollParent.scrollLeft(),
-                scrollParentWidth = this.flowchart.scrollParent.widthValue || this.flowchart.scrollParent.width();
-            if (disLeft + scrollParentWidth >= this.flowchart.width || !this.isDrag) {
-                this.stopScroll();
+        this.timer = setInterval(function() {
+            disLeft = self.flowchart.scrollParent.scrollLeft();
+            scrollParentWidth = self.flowchart.scrollParent.widthValue || self.flowchart.scrollParent.width();
+            if (disLeft + scrollParentWidth >= self.flowchart.width || !self.isDrag) {
+                self.stopScroll();
             }
-            this.flowchart.scrollParent.scrollLeft(disLeft + Math.min(stepD, this.flowchart.width - scrollParentWidth));
+            self.flowchart.scrollParent.scrollLeft(disLeft + Math.min(stepD, self.flowchart.width - scrollParentWidth));
         }, 60)
     }
 }
@@ -316,7 +334,7 @@ BaseModule.prototype.moveStart = function(event, position) {
     // 开始点
     this.startmouseX = event.pageX;
     this.startmouseY = event.pageY;
-    let scrollDistance = this.flowchart.scrollDistance();
+    var scrollDistance = this.flowchart.scrollDistance();
     // 鼠标跟随模块的点
     if (position === 'center') {
         this.followPoint = {
@@ -351,12 +369,12 @@ BaseModule.prototype.moveDrag = function(event) {
         this.stopScroll()
     }
     // 在拖拽过程中
-    let scrollDistance = this.flowchart.scrollDistance();
+    var scrollDistance = this.flowchart.scrollDistance();
     // originx canvas距离页面左边的距离
     this.x = event.pageX + scrollDistance.scrollLeft - this.flowchart.originX - this.followPoint.relativeX;
     this.y = event.pageY + scrollDistance.scrollTop - this.flowchart.originY- this.followPoint.relativeY;
-    let width = this.containerWidth || this.width; //暂时没有containerWidth, 预留
-    let height = this.containerHeight || this.height;
+    var width = this.containerWidth || this.width; //暂时没有containerWidth, 预留
+    var height = this.containerHeight || this.height;
    
     // 模块可移动区域边界检测
     if (this.x < 0) this.x = 0;
@@ -364,10 +382,12 @@ BaseModule.prototype.moveDrag = function(event) {
 
     if (this.y < 0) this.y = 0;
     if (this.y > 0 + this.flowchart.height - height) this.y = this.flowchart.height - height;
+    this.flowchart.lines.forEach(function(line) { line.lineCoordinate(scrollDistance)})
+    this.flowchart.drawLines();
     this.dragDom();
 }
 BaseModule.prototype.contains = function(ancestorId, descendant) {
-    let ancestor = document.getElementById(ancestorId);
+    var ancestor = document.getElementById(ancestorId);
     return ancestor && $.contains(ancestor, descendant);
 }
 BaseModule.prototype.dragDom = function() {
@@ -376,15 +396,13 @@ BaseModule.prototype.dragDom = function() {
         left: this.x,
         top: this.y
     });
-    this.flowchart.drawLines();
 }
 BaseModule.prototype.destroy = function() {
     //  删除相关联的线
-    // let line = lines.find((line) => line.start.id == this.id || line.end.id == this.id);
     this.flowchart.deleteRelaLines(this.feId, this.children);
     this.div.remove();
     // 还没消除本身对象
-    this.flowchart.modules = this.flowchart.modules.filter(item => item.feId !== this.feId);
+    this.flowchart.modules = this.flowchart.modules.filter(function(item) {return item.feId !== this.feId });
 }
 
 
@@ -403,22 +421,22 @@ function ContainModule(options={}) {
 ContainModule.prototype = new BaseModule();
 ContainModule.prototype.initDraw = function() {
     if (!this.feId) {
-        let random = this.flowchart.moduleRandomIds.shift(0);
+        var random = this.flowchart.moduleRandomIds.shift(0);
         if (!random) console.log('模块数量超出最大值1000')
         this.feId = 'containModule' + new Date().getTime() + random;
     }
 
     this.init();
     this.containDraw();
-    let mod = this.addBranch({feId: 'defaultChild' + new Date().getTime(), text: '请添加分支', canbeStart: false, isDefaultBranch: true})
+    var mod = this.addBranch({feId: 'defaultChild' + new Date().getTime(), text: '请添加分支', canbeStart: false, isDefaultBranch: true})
     mod.initDraw();
 }
 ContainModule.prototype.addBranch = function(options) {
     // ~  对-1取反得 0，其他值都不为0；
-    let defaultModule = this.children.length && this.children.find(child => ~child.feId.indexOf('defaultChild'));
+    var defaultModule = this.children.length && this.children.find(function(child) { return ~child.feId.indexOf('defaultChild') });
     if (defaultModule) {
         defaultModule.destroy();
-        this.children = this.children.filter(child => !(~child.feId.indexOf('defaultChild')));
+        this.children = this.children.filter(function (child) {return !Boolean(~child.feId.indexOf('defaultChild')) });
     }
     options = Object.assign(options, { 
         $parent: $(`#${this.feId}`),
@@ -430,7 +448,7 @@ ContainModule.prototype.addBranch = function(options) {
         childrenLength: this.children.length,
         containerId: this.feId
     })
-    let mod = new ChildModule(options);
+    var mod = new ChildModule(options);
     this.childrenHeight = mod.height;
     this.children.push(mod);
     this.resize();
@@ -449,7 +467,7 @@ ContainModule.prototype.resize = function() {
 }
 
 ContainModule.prototype.removeChild = function(moduleId) {
-    this.children = this.children.filter((child) => {
+    this.children = this.children.filter(function(child) {
         if(child.feId == moduleId) {
             child.destroy();
         } else {
@@ -460,17 +478,16 @@ ContainModule.prototype.removeChild = function(moduleId) {
 }
 ContainModule.prototype.destroy = function() {
     //  删除相关联的线
-    // let line = lines.find((line) => line.start.id == this.id || line.end.id == this.id);
     this.flowchart.deleteRelaLines(this.feId, this.children);
     this.div.remove();
     // 还没消除本身对象
-    let modules = this.flowchart.modules;
-    this.flowchart.modules = this.flowchart.modules.filter(item => item.feId !== this.feId);
+    var modules = this.flowchart.modules;
+    this.flowchart.modules = this.flowchart.modules.filter(function(item) {return item.feId !== this.feId});
     this.removeChildren();
 }
 
 ContainModule.prototype.removeChildren = function() {
-    this.children.forEach(item => item.destroy());
+    this.children.forEach(function(item) {return item.destroy()});
     this.children = [];
     this.resize();
 }
@@ -489,7 +506,7 @@ function ChildModule(options={}) {
     this.x = 10;
     this.y = 40;
     this.feType = 'branch';
-    let childModuleOpt = Object.assign(this, options);
+    var childModuleOpt = Object.assign(this, options);
     childModuleOpt.width = childModuleOpt.parentwidth - childModuleOpt.gap * 2;
     childModuleOpt.height = childModuleOpt.parentHeight - childModuleOpt.gap;
     Object.assign(this, childModuleOpt);
@@ -499,7 +516,7 @@ function ChildModule(options={}) {
 ChildModule.prototype = new BaseModule();
 ChildModule.prototype.initDraw = function() {
     if (!this.feId) {
-        let random = this.flowchart.moduleRandomIds.shift(0);
+        var random = this.flowchart.moduleRandomIds.shift(0);
         if (!random) console.log('模块数量超出最大值1000')
         this.feId = 'childModule' + new Date().getTime() + random;
     }
@@ -522,17 +539,21 @@ function SpecialModule(options = {}) {
 }
 SpecialModule.prototype = new ContainModule();
 SpecialModule.prototype.initDraw = function() {
+    var children = this.children.concat([]),
+        self = this,
+        random;
     if (!this.feId) {
-        let random = this.flowchart.moduleRandomIds.shift(0);
+        random = this.flowchart.moduleRandomIds.shift(0);
         if (!random) console.log('模块数量超出最大值1000')
         this.feId = 'specialBranch' + new Date().getTime() + random;
     }
     this.init();
     this.containDraw();
-    let children = this.children.concat([]);
+    var children = this.children.concat([]),
+        self = this;
     this.children = [];
-    children.forEach(child => {
-        let mod = this.addBranch(Object.assign(child))
+    children.forEach(function(child) {
+        var mod = self.addBranch(Object.assign(child))
         mod.initDraw();
     })
 }
