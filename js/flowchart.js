@@ -48,6 +48,7 @@ Flowchart.prototype.init = function() {
     this.menu = menu;
 }
 Flowchart.prototype.deleteLine = function(line) {
+    // 删除某条连线， 私有方法
     if(!line) return;
     let allModules = this.modules || [];
 
@@ -60,6 +61,7 @@ Flowchart.prototype.deleteLine = function(line) {
     this.drawLines();
 }
 Flowchart.prototype.deleteRelaLines = function(moduleId, children=[]) {
+    // 删除相关连线， 私有方法
     let ids = [moduleId],
     delines = [];
     children.forEach(child => ids.push(child.feId));
@@ -72,10 +74,12 @@ Flowchart.prototype.deleteRelaLines = function(moduleId, children=[]) {
 Flowchart.prototype.drawLines = function() {
     let ratio = this.ratio;
     this.ctx.clearRect(0, 0, this.width * ratio, this.height * ratio);
+    let scrollDistance = this.scrollDistance();
 
     this.ctx.strokeStyle = 'green';
     this.lines && this.lines.forEach(line => {
-     this.ctx.beginPath();
+        line.lineCoordinate(scrollDistance);
+        this.ctx.beginPath();
         if (line.focus) {
          this.ctx.lineWidth = line.lineWidth * ratio;
         } else {
@@ -88,6 +92,7 @@ Flowchart.prototype.drawLines = function() {
     });
 }
 Flowchart.prototype.createModule = function(options) {
+    // 根据isDragCreate参数判定该模块是否需要真的创建，还是记录参数
     options.isDragCreate = options.isDragCreate || false; //创建模块时是否要拖动
     if (!options.isDragCreate) {
         return this.createRealModule(options, true);
@@ -102,6 +107,7 @@ Flowchart.prototype.createModule = function(options) {
     }
 }
 Flowchart.prototype.createRealModule = function(options, shouldInSave=true) {
+    // 真的创建模块
     var newmodule = null,
         containModule = null,
         feType = options.feType || 'normal';
@@ -147,22 +153,34 @@ Flowchart.prototype.createRealModule = function(options, shouldInSave=true) {
     if (shouldInSave && newmodule) {
         this.modules.push(newmodule)
     }
-    if (newmodule.feNextId) {
-        this.drawLines();
-    }
     return newmodule;
 }
 Flowchart.prototype.updateModule = function(options) {
+    // 更新某个模块
     let mo = this.modules.find(item => item.feId === options.feId);
     mo.update(options);
 }
 Flowchart.prototype.removeChildModule = function(parentId, childId) {
+    // 删除某个子模块
     let parent = this.modules.find(item => item.feId === parentId);
     parent.removeChild(childId);
 }
 Flowchart.prototype.removeChildren = function(parentId) {
+    // 删除该模块下的所有子模块
     let parent = this.modules.find(item => item.feId === parentId);
     parent.removeChildren();
+}
+Flowchart.prototype.createChildren = function(parentId, children=[]) {
+    // 批量增加子模块
+    let parent = this.modules.find(item => item.feId === parentId);
+    let self = this;
+    children.forEach(function(child) {
+        let childModule = parent.addBranch(child);
+        childModule.initDraw();
+        self.moduleLineRestore(childModule);
+        self.modules.push(childModule);
+    });
+    this.drawLines();
 }
 
 Flowchart.prototype.onLine = function(event) {
@@ -211,6 +229,7 @@ Flowchart.prototype.onLineClick = function(event) {
     this.drawLines();
 }
 Flowchart.prototype.deleteLineEv = function(event) {
+    // 删除操作事件
     if (event.key == 'Backspace') {
        this.deleteFocusLine();
     } 
@@ -265,6 +284,7 @@ Flowchart.prototype.initEvent = function() {
             ev.originalEvent.dataTransfer.dropEffect = "move";
         } 
     });
+    // 拖拽时移动
     this.scrollParent.on('dragover', function(ev) {
         ev.preventDefault();
         if (self.creatingModule && self.creatingModule.moveDrag) {
@@ -272,6 +292,8 @@ Flowchart.prototype.initEvent = function() {
             ev.originalEvent.dataTransfer.dropEffect = "move"
         } 
     })
+
+    // 拖拽完成后， 删除临时模块， 创建新模块。
     this.scrollParent.on('drop', function(ev) {
         ev.preventDefault();
         if (self.creatingModule && self.creatingModule.moveEnd) {
@@ -300,6 +322,8 @@ Flowchart.prototype.initEvent = function() {
             newmodule.children.length && newmodule.children.forEach(item =>  self.modules.push(item));
         } 
     })
+
+    // 完成拖拽时，若没在画布区域内放置， 清除临时模块
     $('body').on('dragend', function(ev) {
         if (self.creatingModule) {
             self.creatingModule.destroy();
@@ -348,7 +372,7 @@ Flowchart.prototype.save = function () {
 }
 
 Flowchart.prototype.restore = function(modules = []) {
-    let lines = [];
+    // 恢复模块
     if (!localStorage.getItem('modules')) return;
     modules = JSON.parse(localStorage.getItem('modules'));
     modules.map(item => Object.assign(item, JSON.parse(item.viewInfo)));
@@ -356,25 +380,24 @@ Flowchart.prototype.restore = function(modules = []) {
     // 先恢复父模块和普通模块
     let childModules = modules.filter(item => item.feType === 'branch'),
         otherModules = modules.filter(item => item.feType !== 'branch');
-    otherModules.forEach(item => moduleRestore.call(this, item));
-    childModules.forEach(item => moduleRestore.call(this, item));
-    
-    function moduleRestore(obj) {
-        let moduleItem = this.createRealModule(Object.assign(obj));
-        setTimeout(() => {
-            if (obj.feNextId) {
-                let random = this.lineRandomIds.shift(0);
-                if (!random) console.log('线段超出最大值1000')
-                let feId = 'line' + new Date().getTime() + random;
-                var line = new Baseline({ originX: this.originX, originY: this.originY, feId });
-                line.start = { feId: obj.feId };
-                line.end = { feId: obj.feNextId};
-                line.styleEndPonit();
-                line.lineCoordinate(this.scrollDistance());
-                lines.push(line);
-                this.lines = lines;
-                this.drawLines();
-            }
-        }, 200);
+    otherModules.forEach(item => this.moduleRestore(item));
+    childModules.forEach(item => this.moduleRestore(item));
+    this.drawLines();
+}
+Flowchart.prototype.moduleRestore = function(obj)  {
+    let moduleItem = this.createRealModule(Object.assign(obj));
+    this.moduleLineRestore(moduleItem);
+}
+Flowchart.prototype.moduleLineRestore = function(obj) {
+    // 模块连线恢复
+    if (obj.feNextId) {
+        let random = this.lineRandomIds.shift(0);
+        if (!random) console.log('线段超出最大值1000')
+        let feId = 'line' + new Date().getTime() + random;
+        var line = new Baseline({ originX: this.originX, originY: this.originY, feId });
+        line.start = { feId: obj.feId };
+        line.end = { feId: obj.feNextId};
+        line.styleEndPonit();
+        this.lines.push(line);
     }
 }

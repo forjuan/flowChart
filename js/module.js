@@ -376,15 +376,6 @@ BaseModule.prototype.dragDom = function() {
         left: this.x,
         top: this.y
     });
-    let dragableRect = Array.from(this.div.find('.dragableRect'));
-    dragableRect.length && dragableRect.forEach(rect => {
-        this.flowchart.lines.forEach(line => {
-            let rectClass = '.'+ rect.className.replace(' ', '.');
-            if ($(`#${line.start.feId} ${rectClass}`).is($(rect)) || $(`#${line.end.feId} ${rectClass}`).is($(rect))) {
-                line.lineCoordinate(this.flowchart.scrollDistance());
-            } 
-        });
-    });
     this.flowchart.drawLines();
 }
 BaseModule.prototype.destroy = function() {
@@ -425,7 +416,7 @@ ContainModule.prototype.initDraw = function() {
 ContainModule.prototype.addBranch = function(options) {
     // ~  对-1取反得 0，其他值都不为0；
     let defaultModule = this.children.length && this.children.find(child => ~child.feId.indexOf('defaultChild'));
-    if (defaultModule && (options.feId || Boolean(~options.feId.indexOf('defaultChild')))) {
+    if (defaultModule) {
         defaultModule.destroy();
         this.children = this.children.filter(child => !(~child.feId.indexOf('defaultChild')));
     }

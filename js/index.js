@@ -61,6 +61,16 @@ $('#createModuleSpecial').on('dragstart', function(event) {
     //  for firefox 否则drag其他事件无法正常触发
     event.originalEvent.dataTransfer.setData('createModule', {});
 });
+$('#crateChildren').on('click', function() {
+    let children = []
+    currentModule.children.forEach(element => {
+        children.push(Object.assign({},element))
+    });
+    let obj = children.shift();
+    children.push(obj);
+    flowchart.removeChildren(currentModule.feId);
+    flowchart.createChildren(currentModule.feId, children);
+})
 
 
 $('#update').click(function() {
