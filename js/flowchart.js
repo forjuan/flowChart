@@ -305,7 +305,6 @@ Flowchart.prototype.initEvent = function() {
             if (obj.textX) obj.textX = obj.textX / obj.ratio; 
             // 重新生成， 否则id相同的元素会被删除
             delete obj.feId;
-            if (obj.children) obj.children = [];
             self.creatingModule.children && self.creatingModule.children.map(item => {
                 if (item.isDefaultBranch) {
                     return Object.assign({}, item);
