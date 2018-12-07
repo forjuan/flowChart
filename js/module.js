@@ -141,6 +141,7 @@ BaseModule.prototype.createdragableRect = function() {
         if (focuesLine) {
             // 重新开始
             focuesLine.reconnected(otherdir, self.flowchart.lines);
+            self.flowchart.menu.hide();
         }
 
         // 同一起点只能连线一次
@@ -181,8 +182,8 @@ BaseModule.prototype.createdragableRect = function() {
         var scrollDistance = self.flowchart.scrollDistance();
         var x = event.pageX - self.flowchart.originX + scrollDistance.scrollLeft, y = event.pageY - self.flowchart.originY + scrollDistance.scrollTop;
         
-        // 不能放置在相同属性的端点上， 如start  不能放置在start上
-        if ($(event.target).hasClass(otherdir)) {
+        // 不能放置在相同属性的端点上， 如start  不能放置在start上, 且 如果是是end 放置的start不能连线
+        if ($(event.target).hasClass(otherdir) && !(otherdir === 'start' && $(event.target).hasClass('connected'))) {
             event.dataTransfer.dropEffect = 'copy';
         } else {
             event.dataTransfer.dropEffect = 'none';
@@ -357,6 +358,9 @@ BaseModule.prototype.stopScroll = function() {
 BaseModule.prototype.moveStart = function(event, position) {
     if ($(event.target).is(this.$setting) || $(event.target).hasClass('dragableRect')) return;
     this.isDrag = true;
+
+    //聚焦连线清除
+    this.flowchart.onLineClickBind(event);
     this.stopScroll()
     // 开始点
     this.startmouseX = event.pageX;

@@ -57,7 +57,7 @@ Flowchart.prototype.initEvent = function() {
     // 移动到连线上
     $('body').on('mousemove', this.onLineBind);
     // 聚焦连线
-    $('body').on('mousedown', this.onLineClickBind);
+    $('body').on('click', this.onLineClickBind);
     //删除连线
     $('body').on('keyup', this.deleteLineBind);
     // window resize change
@@ -131,7 +131,7 @@ Flowchart.prototype.initEvent = function() {
     // 完成拖拽时，若没在画布区域内放置， 清除临时模块
     $('body').on('dragend', function(ev) {
         if (self.creatingModule) {
-            self.creatingModule.destroy();
+            self.creatingModule.destroy && self.creatingModule.destroy();
             self.creatingModule = null;
         }
     })

@@ -22,10 +22,17 @@ Baseline.prototype.setPoint = function (opt={}) {
     }
 }
 Baseline.prototype.styleEndPonit = function() {
-    $('#'+ this.end.feId + '>.dragableRect.end').css({
-        backgroundColor: 'green'
-    });
-    $('#'+this.end.feId + '>.dragableRect.end,' + '#' +this.start.feId + '>.dragableRect.start').addClass('connected');
+    if (this.isEnd) {
+        $('#'+ this.end.feId + '>.dragableRect.end').css({
+            backgroundColor: 'green'
+        });
+        $('#'+this.end.feId + '>.dragableRect.end,' + '#' +this.start.feId + '>.dragableRect.start').addClass('connected');
+    } else {
+        $('#'+ this.end.feId + '>.dragableRect.end').css({
+            backgroundColor: 'white'
+        });
+        $('#'+this.end.feId + '>.dragableRect.end').removeClass('connected');
+    }
 }
 
 Baseline.prototype.update = function(opt={}) {
@@ -48,8 +55,10 @@ Baseline.prototype.reconnected = function(deleteDir, alllines) {
     this.isEnd = false;
     this.focus = false;
     var self = this;
-    var otherEnd = alllines.find(function (line) { return line.end.feId === self.end.feId});
-    if(!otherEnd) $('#' + this.end.feId + '>.start').removeClass('connected');
+    var otherEnd = alllines.find(function (line) { return line.feId != self.feId && line.end.feId === self.end.feId });
+    if(!otherEnd) {
+        this.styleEndPonit();
+    }
     $('#' + this.start.feId + '>.start').removeClass('connected');
     this[deleteDir] = null;
 }
