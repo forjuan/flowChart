@@ -120,6 +120,6 @@ $('#canvas').on('modulesetting', function(data) {
 
 flowchart.restore()
 if(flowchart.modules.length === 0){
-    flowchart.createRealModule(Object.assign({isFirst: true, hasSetting: true, }));
-    flowchart.createRealModule(Object.assign({isLast: true, text: '结束'}));
+    flowchart.createModule(Object.assign({isFirst: true, hasSetting: true, isDragCreate: false}));
+    flowchart.createModule(Object.assign({isLast: true, text: '结束', isDragCreate: false}));
 }

@@ -245,7 +245,7 @@ BaseModule.prototype.inScrollParent = function(point) {
 }
 
 BaseModule.prototype.moveScroll = function(event) {
-    // 处理滚动， 如果已经在滚动不做处理
+    // 处理边界滚动， 如果已经在滚动不做处理
     if (this.isAutoScroll) return;
     var point = { x: event.pageX, y: event.pageY };
     // 鼠标相隔最近scrollParent的四个方向线段， 并朝该方向滚动
