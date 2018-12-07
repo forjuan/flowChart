@@ -57,7 +57,7 @@ Flowchart.prototype.initEvent = function() {
     // 移动到连线上
     $('body').on('mousemove', this.onLineBind);
     // 聚焦连线
-    $('body').on('click', this.onLineClickBind);
+    $('body').on('mousedown', this.onLineClickBind);
     //删除连线
     $('body').on('keyup', this.deleteLineBind);
     // window resize change
@@ -146,7 +146,10 @@ Flowchart.prototype.deleteLine = function(line) {
     this.lines = this.lines.filter(function(li={}) {return li.feId && line.feId != li.feId});
     var endId = line.end && line.end.feId;
     var otherEnd = this.lines.find(function(li={}) {return li.end && endId == li.end.feId});
-    if (!otherEnd) $(`#${endId} .dragableRect.leftRect`).css({backgroundColor: 'rgba(255, 255, 255, 0.5)'});
+    if (!otherEnd) {
+        $('#' + endId + '>.dragableRect.end').css({backgroundColor: 'rgba(255, 255, 255, 0.5)'}).removeClass('connected');
+    };
+    $('#' + line.start.feId + '>.dragableRect.start').removeClass('connected');
     this.drawLines();
 }
 Flowchart.prototype.deleteRelaLines = function(moduleId, children=[]) {
@@ -158,7 +161,7 @@ Flowchart.prototype.deleteRelaLines = function(moduleId, children=[]) {
     ids.forEach(function(id) {
         delines = delines.concat(self.lines.filter(function(line) {return line.start.feId == id || line.end.feId == id}));
     });
-    delines.forEach(function(deline) {return this.deleteLine(deline) });
+    delines.forEach(function(deline) {return self.deleteLine(deline) });
 }
 Flowchart.prototype.onLine = function(event) {
     // 移动到连线上
@@ -371,25 +374,9 @@ Flowchart.prototype.getAllNodes = function() {
 
 // publci 获取已连接节点数
 Flowchart.prototype.getConnectedNodes = function() {
-    // lines的所有端点去重, 开始节点Id模块与结束节点模块会相同， 需要区分，属于不同节点
-    // node {
-    //      type: 'start' ,// end  开始还是结束节点
-    //      feId: '' //模块Id
-    // }
-    var nodes = [];
-    this.lines.forEach(function(line) {
-        nodes.push({ type: 'start', feId: line.start.feId});
-        line.end && nodes.push({ type: 'end', feId: line.end.feId });
-    })
-    // 去重
-    var uniqueNodes = [];
-    nodes.forEach(function(node) {
-        if (!uniqueNodes.find(function(uninode) { return uninode.type === node.type && uninode.feId === node.feId})) {
-            uniqueNodes.push(node);
-        }
-    });
-    
-    return uniqueNodes.length;
+    // 结点连接后有connected的标识
+    var nodes = this.scrollParent.find('.dragableRect.connected') || [];
+    return nodes.length;
 }
 
 // 节点数相关信息显示在页面内容上
@@ -452,6 +439,7 @@ Flowchart.prototype.restore = function(modules = []) {
     childModules.forEach(function(item) {self.moduleRestore(item)});
 
     this.lines.forEach(function(line) {
+        line.styleEndPonit();
         line.lineCoordinate(scrollDistance);
     })
     this.drawLines();
@@ -470,10 +458,11 @@ Flowchart.prototype.moduleLineRestore = function(obj, scrollDistance) {
         if (!random) console.log('线段超出最大值1000')
         var feId = 'line' + new Date().getTime() + random;
         var line = new Baseline({ originX: this.originX, originY: this.originY, feId });
-        line.start = { feId: obj.feId };
-        line.end = { feId: obj.feNextId};
+        line.setPoint({
+            start: { feId: obj.feId },
+            end: { feId: obj.feNextId}
+        });
         if (scrollDistance) line.lineCoordinate(scrollDistance);
-        line.styleEndPonit();
         this.lines.push(line);
     }
     console.timeEnd('restoremodule')

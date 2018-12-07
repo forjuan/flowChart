@@ -9,30 +9,49 @@ function Baseline(options={}) {
     Object.assign(this, defaultOpts, options);
 }
 Baseline.prototype.setPoint = function (opt={}) {
+    // 有端点后设置值
     this.sx = opt.sx || this.sx;
     this.sy = opt.sy || this.sy;
     if (opt.start) this.start = opt.start;
     if (opt.end) {
         this.end = opt.end;
-        this.styleEndPonit();
     };
+    if (this.start && this.end) {
+        this.isEnd = true;
+        this.styleEndPonit();
+    }
 }
 Baseline.prototype.styleEndPonit = function() {
-    $(`#${this.end.feId} .dragableRect.leftRect`).css({
+    $('#'+ this.end.feId + '>.dragableRect.end').css({
         backgroundColor: 'green'
-    })
+    });
+    $('#'+this.end.feId + '>.dragableRect.end,' + '#' +this.start.feId + '>.dragableRect.start').addClass('connected');
 }
 
 Baseline.prototype.update = function(opt={}) {
-    this.sx = opt.sx || this.sx;
-    this.sy = opt.sy || this.sy;
-    this.ex = opt.ex || this.ex;
-    this.ey = opt.ey || this.ey;
+    // 拖动时 没有端点时更新
+    if (opt.dir === 'start') {
+        this.sx = opt.x || this.sx;
+        this.sy = opt.y || this.sy;
+    } else if (opt.dir === 'end') {
+        this.ex = opt.x || this.ex;
+        this.ey = opt.y || this.ey;
+    }
     
     if (this.start && this.end) {
         this.isEnd = true;
+        this.styleEndPonit();
     }
     // 设置
+}
+Baseline.prototype.reconnected = function(deleteDir, alllines) {
+    this.isEnd = false;
+    this.focus = false;
+    var self = this;
+    var otherEnd = alllines.find(function (line) { return line.end.feId === self.end.feId});
+    if(!otherEnd) $('#' + this.end.feId + '>.start').removeClass('connected');
+    $('#' + this.start.feId + '>.start').removeClass('connected');
+    this[deleteDir] = null;
 }
 
 Baseline.prototype.lineCoordinate = function(scrollDistance = {}) {
@@ -41,13 +60,13 @@ Baseline.prototype.lineCoordinate = function(scrollDistance = {}) {
     var scrollLeft = scrollDistance.scrollLeft || 0,
         scrollTop = scrollDistance.scrollTop || 0;
     if (this.start) {
-        var startRect = $(`#${this.start.feId} .rightRect`)[0],
+        var startRect = $(`#${this.start.feId}>.start`)[0],
             offset = $(startRect).offset();
         this.sx = offset.left - this.originX + scrollLeft + $(startRect).width()/2;
         this.sy = offset.top - this.originY + scrollTop + $(startRect).height()/2;
     }
     if (this.end) {
-        var endRect = $(`#${this.end.feId} .leftRect`)[0],
+        var endRect = $(`#${this.end.feId}>.end`)[0],
             offset = $(endRect).offset();
         this.ex = offset.left - this.originX + scrollLeft + $(endRect).width()/2;
         this.ey = offset.top -  this.originY + scrollTop + $(endRect).height()/2;

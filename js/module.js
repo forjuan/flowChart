@@ -120,38 +120,49 @@ BaseModule.prototype.createdragableRect = function() {
     var self = this;
     // 创建连接点
     if (this.canbeEnd) {
-        var leftdiv = $(`<div class="dragableRect leftRect" style="top: ${this.height/2 - 3}px"></div>`);
+        var leftdiv = $(`<div class="dragableRect leftRect end" draggable="true" style="top: ${this.height/2 - 3}px"></div>`);
         this.div.append(leftdiv);
     }
     if (this.canbeStart) {
-        var rightdiv = $(`<div class="dragableRect rightRect" draggable="true" style="top: ${this.height/2 - 3}px"></div>`);
+        var rightdiv = $(`<div class="dragableRect rightRect start" draggable="true" style="top: ${this.height/2 - 3}px"></div>`);
         this.div.append(rightdiv);
     }
 
-    $('body').on('dragstart', '#' + this.feId +'>.dragableRect.rightRect', function(event)  {
+    $('body').on('dragstart', '#' + this.feId +'>.dragableRect', function(event)  {
         event = event.originalEvent;
         // 连线只能从模块右边开始连线
-        var nowId = $(event.target).parent().attr('id');
-        var line = self.flowchart.lines.find(function(line) { return line.start && nowId == line.start.feId });
-        if (line) return;
+        var nowId = $(event.target).parent().attr('id'),
+            dir = $(event.target).hasClass('start') ? 'start' : 'end',
+            otherdir = dir === 'start' ? 'end' : 'start';
 
-        var elementPro = '';
-        line = new Baseline({ originX: self.flowchart.originX, originY: self.flowchart.originY});
-        if ($(event.target).hasClass('leftRect')) {
-            elementPro = 'end';
-        } else {
-            elementPro = 'start';
+        
+        // 如果是聚焦的线上的点， 要重新连接
+        var focuesLine = self.flowchart.lines.find(function(line) { return line.focus && line[dir].feId === nowId });
+        if (focuesLine) {
+            // 重新开始
+            focuesLine.reconnected(otherdir, self.flowchart.lines);
         }
-        line[elementPro] = {
-            feId: nowId
-        };
-        line.lineCoordinate(self.flowchart.scrollDistance());
-        self.flowchart.lines.push(line);
-        // for dragover access this data
-        self.flowchart.currentStartModuleId = nowId;
+
+        // 同一起点只能连线一次
+        if (dir == 'start' && $(event.target).hasClass('connected')) return;
+
+        if (!focuesLine) {
+            var elementPro = '';
+            line = new Baseline({ originX: self.flowchart.originX, originY: self.flowchart.originY});
+            
+            line[dir] = {
+                feId: nowId
+            };
+            line.lineCoordinate(self.flowchart.scrollDistance());
+            self.flowchart.lines.push(line);
+        }
+       
+        // for dragover access this data, 拖拽开始点
+        var linefirstPoint = dir + ' ' + nowId
+        self.flowchart.currentDragStartModuleId = linefirstPoint;
         event.dataTransfer.effectAllowed= 'copy';
         // firefox 需要设置Data否则后续事件不会触发
-        event.dataTransfer.setData('startModuleId', nowId);
+        event.dataTransfer.setData('dragStartModuleId', linefirstPoint);
     });
 
     this.flowchart.canvas.parent().unbind('dragover.BaseModuleNode');
@@ -159,37 +170,42 @@ BaseModule.prototype.createdragableRect = function() {
         event = event.originalEvent;
         // 不阻止默认行为，否则不能drop
         event.preventDefault();
-        var nowId = self.flowchart.currentStartModuleId;
-        if (!nowId) return; // 不是连线触发的
+        var linefirstPoint = self.flowchart.currentDragStartModuleId;
+        if (!linefirstPoint) return; // 不是连线触发的
+        var linefirst = linefirstPoint.split(' '),
+            dir = linefirst[0],
+            otherdir = dir == 'start' ? 'end': 'start',
+            nowId = linefirst[1];
+
 
         var scrollDistance = self.flowchart.scrollDistance();
         var x = event.pageX - self.flowchart.originX + scrollDistance.scrollLeft, y = event.pageY - self.flowchart.originY + scrollDistance.scrollTop;
         
-        // 非指定元素上  不能放置
-        if ($(event.target).hasClass('leftRect') && !self.contains(nowId, event.target)) {
+        // 不能放置在相同属性的端点上， 如start  不能放置在start上
+        if ($(event.target).hasClass(otherdir)) {
             event.dataTransfer.dropEffect = 'copy';
         } else {
             event.dataTransfer.dropEffect = 'none';
         }
         self.flowchart.lines.forEach(function(line) { 
             if (line.isEnd) return;
-            if(line.start && line.start.feId == nowId) {
-                line.update({ex: x, ey: y});
+            if(line[dir] && line[dir].feId == nowId) {
+                line.update({dir: otherdir, x, y});
                 line.lineCoordinate(scrollDistance);
             }
         });
         self.flowchart.drawLines(scrollDistance);
     });
-    $('body').on('dragend', '#'+ this.feId + '>.dragableRect.rightRect', function(event) {
+    $('body').on('dragend', '#'+ this.feId + '>.dragableRect', function(event) {
         // 如果没有降落在合适的位置， 取消该连线
         event = event.originalEvent;
         self.isLinging = false;
         event.preventDefault();
-        // 没有无终点的连线
+        // 没有两个端点的连线
         if (!self.flowchart.lines.find(function (line){ return !line.isEnd})) return;
         var myline = self.flowchart.lines.find(function(line) {
-            if (line.isEnd || line.end) return false;
-            if (self.feId == line.start.feId) {
+            if (line.isEnd) return false;
+            if (line.start && self.feId == line.start.feId || (line.end && self.feId == line.end.feId )) {
                 line.destroy();
                 return true;
             }
@@ -198,32 +214,43 @@ BaseModule.prototype.createdragableRect = function() {
         self.flowchart.lines = self.flowchart.lines.filter(function(line){return line !== myline })
         self.startModuleId = null;
         self.flowchart.drawLines();
+        self.flowchart.showNodes();
     });
 
     // bind事件命名空间， 防止多次重复触发
     $('body').unbind('drop.BaseModuleNode')
-    $('body').bind('drop.BaseModuleNode', '.dragableRect.leftRect', function(event) {
+    $('body').bind('drop.BaseModuleNode', '.dragableRect', function(event) {
         event = event.originalEvent;
         event.preventDefault();
         // 找到设置的id  找到line
-        var id = event.dataTransfer.getData('startModuleId'),
-            nowId = $(event.target).parent().attr('id');
+        var linefirstPoint = event.dataTransfer.getData('dragStartModuleId');
+        if (!linefirstPoint) return;
+
+        // 起点只能有一个
+        if ($(event.target).hasClass('start') && $(event.target).hasClass('connected')) return;
+
+        var linefirst = linefirstPoint.split(' '),
+            id = linefirst[1],
+            dir = linefirst[0],
+            otherdir = dir ==='start'? 'end': 'start',
+            nowId = $(event.target).parent().attr('id'),
+            scrollDistance = self.flowchart.scrollDistance();
         var fmodule = self.flowchart && self.flowchart.modules.find(function(mod) {return mod.feId == nowId}) || {};      
         var x = fmodule.x, y = fmodule.y + fmodule.height/2;
-        if (id == nowId) return;
+
         self.flowchart && self.flowchart.lines.forEach(function(line) { 
             if (line.isEnd) return;
-            // 没有end点的
-            if (line.start && line.start.feId == id) {
-                line.setPoint({
-                    end: { feId: nowId }
-                });
-                var mostart = self.flowchart.modules.find(function (start) { return start.feId == id }) || {};
-                var monext = self.flowchart.modules.find(function (next) { return next.feId == nowId }) || {};
+            // 只有一个端点的
+            if (!line[otherdir]) {
+                var obj = {};
+                obj[otherdir] =  { feId: nowId }
+                line.setPoint(obj);
+                line.lineCoordinate(scrollDistance)
+                var mostart = self.flowchart.modules.find(function (start) { return start.feId == line.start.feId}) || {};
+                var monext = self.flowchart.modules.find(function (next) { return next.feId == line.end.feId }) || {};
                 mostart.feNextId = monext.feId;
-                line.update({ex: x, ey: y});
                 line.isEnd = true;
-            }
+            } 
         });
         self.flowchart.drawLines();
         // 增加连线后节点数变化
@@ -256,7 +283,7 @@ BaseModule.prototype.moveScroll = function(event) {
         right = { dir:'right',start: { x: offset.left + width, y: offset.top}, end: { x: offset.left + width, y: offset.top + height}},
         top = { dir:'top',start: { x: offset.left, y: offset.top}, end: { x: offset.left + width, y: offset.top }},
         bottom = { dir:'bottom',start: { x: offset.left, y: offset.top + height }, end: { x: offset.left + width, y: offset.top + height }};
-    //如果有鼠标点到两条线段的距离相同时，随机选个方向滚动 
+    //如果有鼠标 点到两条线段 的距离相同时，随机选个方向滚动 
     var leftdis = pointToSegDist(point, left.start, left.end),
         rightdis = pointToSegDist(point, right.start, right.end),
         topdis = pointToSegDist(point, top.start, top.end),
