@@ -8,8 +8,6 @@ function BaseModule (options = {}) {
     this.hasSetting = false;
     this.ratio = ratio;
     this.text = '标题';
-    this.width = 100;
-    this.height = 30;
     this.deleteWidth = 10;
     this.canvasX = 0; //canvas x 坐标
     this.canvasY = 0;
@@ -21,15 +19,17 @@ function BaseModule (options = {}) {
     this.textX = 5; //文字据左边偏移
     this.color =  '#333';
     this.fontColor = '#000';
-    
+    this.titleIcon = 'icon-shuxingtushouqi';
+    this.position = 'absolute';
     Object.assign(this, options);
-
+    this.className = options.className ? options.className : '' + ' flowBaseModule';
     this.fontSize = this.fontSize * ratio;
     this.text = options.text ? options.text : this.isFirst ? '开始': (this.isLast ? '结束': '标题');
     this.textX = this.textX * ratio;
 
     if (this.isLast) {
         this.canbeStart = false;
+        this.className += ' last-module';
     } else if (options.canbeStart !== undefined) {
         this.canbeStart = options.canbeStart;
     } else {
@@ -38,6 +38,7 @@ function BaseModule (options = {}) {
 
     if (this.isFirst) {
         this.canbeEnd = false;
+        this.className += ' first-module';
     } else if (options.canbeEnd !== undefined) {
         this.canbeEnd = options.canbeEnd;
     } else {
@@ -53,39 +54,42 @@ BaseModule.prototype.update = function(newModule) {
     this.drawModule();
 }
 BaseModule.prototype.drawModule = function() {
-    this.ctx.clearRect(this.canvasX, this.canvasY, this.width * this.ratio, this.height* this.ratio)
-    this.ctx.strokeStyle = this.color;
-    this.ctx.strokeWidth = 1 * this.ratio;
-    this.ctx.strokeRect(this.canvasX, this.canvasY, this.width * this.ratio, this.height* this.ratio);
-    this.ctx.fillStyle = this.fontColor;
-    this.ctx.font = this.font;
-    this.ctx.fillText(this.text, this.textX, this.textY);
-    if (this.hasDelete) {
-        this.deletectx.strokeStyle = '#333';
-        this.deletectx.lineWidth = 1 * this.ratio;
-        this.deletectx.beginPath();
-        this.deletectx.moveTo(0, 0);
-        this.deletectx.lineTo(this.deleteWidth * this.ratio, this.deleteWidth * this.ratio);
-        this.deletectx.moveTo(0, this.deleteWidth * this.ratio);
-        this.deletectx.lineTo(this.ratio * this.deleteWidth, 0);
-        this.deletectx.stroke();
+    // 更新后可能更改的dom
+    var i, title, titleClass;
+    if (!this.$icon && this.titleIcon) {
+        i = $('<i class="ivricon ' + this.titleIcon + '"></i>');
+        this.$icon = i;
+        this.titleWraper.append(i);
+    } else if(this.$icon) {
+        this.$icon.removeClass().addClass(this.titleIcon);
+    }
+    if (!this.$title) {
+        titleClass = this.titleIcon ? 'title-text hasLeftSepa' : 'title-text hasLeftMargin';
+        title = $('<span class="'+ titleClass + '">' + this.text + '</span>');
+        this.$title = title;
+        this.titleWraper.append(title);
+    } else {
+        this.$title.html(this.text);
     }
 }
 BaseModule.prototype.init = function() {
     var self = this;
+    this.rectWidth = this.flowchart.rectWidth;
     if (!this.feId) {
         var random = this.flowchart.moduleRandomIds.shift(0);
         if (!random) console.log('模块数量超出最大值1000')
         this.feId = 'module' + new Date().getTime() + random;
     }
-    // 创建一个div元素包含canvas元素
-    var div = $(`<div id="${this.feId}" draggable="false" class="basemodule ${this.className}" style="position: absolute; z-index: 1;left: ${this.x}px; top: ${this.y}px; width: ${this.width}px; height: ${this.height}px;"></div>`);
-    var canvas = $(`<canvas id="canvas${this.feId}" width=${this.width} height=${this.height}></canvas>`);
+    var div = $('<div id="' +this.feId+'" draggable="false" class="basemodule ' + this.className +'" style="position:' + this.position +'"></div>');
+    if (this.position === 'absolute') {
+        div.css({
+            left: this.x + 'px',
+            top: this.y + 'px'
+        })
+    }
+  
     this.div = div;
-    
-    this.ctx = canvas[0].getContext('2d');
-    this.$canvas = canvas;
-    resetCanvasRatio(canvas, this.width, this.height, this.ratio);
+    this.titleWraper = $('<div class="title-wraper"></div>');
     
     if (this.canDrag) {
         div.mousedown(this.moveStart.bind(this));
@@ -96,42 +100,37 @@ BaseModule.prototype.init = function() {
         var width = this.deleteWidth;
         var rx = 10;
         var ty = (this.height - width)/2;
-        var $delete = $(`<div id="delete${this.feId}"style="position: absolute; right: ${rx}px; top: ${ty}px; width: ${width}px; height: ${width}px"></div>`);
-        var canvasDelete = $(`<canvas style="position: absolute; left: 0px; top:0px" width=${width} height=${width}></canvas>`);
-        this.deletectx = canvasDelete[0].getContext('2d');
+        var $delete = $('<div class="module-delete" id="delete' + this.feId +'"><i class="'+ this.flowchart.deleteIcon + '"></i></div>');
         this.delete = $delete;
-        resetCanvasRatio(canvasDelete, width, width, this.ratio);
-        $delete.on('click', function(event) {
+        $delete.on('mousedown', function(event) {
             event.stopPropagation();
             self.destroy();
-
             // 删除后节点数变化
             self.flowchart.showNodes();
         })
-        $delete.append(canvasDelete);
         div.append($delete);
     }
     this.drawModule();
     this.createdragableRect();
-    div.append(canvas);
+    div.append(this.titleWraper);
     this.$parent.append(div);
 }
 BaseModule.prototype.createdragableRect = function() {
     var self = this;
     // 创建连接点
     if (this.canbeEnd) {
-        var leftdiv = $(`<div class="dragableRect leftRect end" draggable="true" style="top: ${this.height/2 - 3}px"></div>`);
-        this.div.append(leftdiv);
+        var leftdiv = $('<div class="dragableRect leftRect end" draggable="true"></div>');
+        this.titleWraper.append(leftdiv);
     }
     if (this.canbeStart) {
-        var rightdiv = $(`<div class="dragableRect rightRect start" draggable="true" style="top: ${this.height/2 - 3}px"></div>`);
-        this.div.append(rightdiv);
+        var rightdiv = $('<div class="dragableRect rightRect start" draggable="true"></div>');
+        this.titleWraper.append(rightdiv);
     }
 
-    $('body').on('dragstart', '#' + this.feId +'>.dragableRect', function(event)  {
+    $('body').on('dragstart', '#' + this.feId +'>.title-wraper>.dragableRect', function(event)  {
         event = event.originalEvent;
         // 连线只能从模块右边开始连线
-        var nowId = $(event.target).parent().attr('id'),
+        var nowId = $(event.target).parent().parent().attr('id'),
             dir = $(event.target).hasClass('start') ? 'start' : 'end',
             otherdir = dir === 'start' ? 'end' : 'start';
 
@@ -154,7 +153,7 @@ BaseModule.prototype.createdragableRect = function() {
             line[dir] = {
                 feId: nowId
             };
-            line.lineCoordinate(self.flowchart.scrollDistance());
+            line.lineCoordinate(self.flowchart.scrollDistance(), self.rectWidth);
             self.flowchart.lines.push(line);
         }
        
@@ -192,12 +191,12 @@ BaseModule.prototype.createdragableRect = function() {
             if (line.isEnd) return;
             if(line[dir] && line[dir].feId == nowId) {
                 line.update({dir: otherdir, x, y});
-                line.lineCoordinate(scrollDistance);
+                line.lineCoordinate(scrollDistance, self.rectWidth);
             }
         });
         self.flowchart.drawLines(scrollDistance);
     });
-    $('body').on('dragend', '#'+ this.feId + '>.dragableRect', function(event) {
+    $('body').on('dragend', '#'+ this.feId + '>.title-wraper>.dragableRect', function(event) {
         // 如果没有降落在合适的位置， 取消该连线
         event = event.originalEvent;
         self.isLinging = false;
@@ -234,7 +233,7 @@ BaseModule.prototype.createdragableRect = function() {
             id = linefirst[1],
             dir = linefirst[0],
             otherdir = dir ==='start'? 'end': 'start',
-            nowId = $(event.target).parent().attr('id'),
+            nowId = $(event.target).parent().parent().attr('id'),
             scrollDistance = self.flowchart.scrollDistance();
         var fmodule = self.flowchart && self.flowchart.modules.find(function(mod) {return mod.feId == nowId}) || {};      
         var x = fmodule.x, y = fmodule.y + fmodule.height/2;
@@ -246,7 +245,7 @@ BaseModule.prototype.createdragableRect = function() {
                 var obj = {};
                 obj[otherdir] =  { feId: nowId }
                 line.setPoint(obj);
-                line.lineCoordinate(scrollDistance)
+                line.lineCoordinate(scrollDistance, self.rectWidth)
                 var mostart = self.flowchart.modules.find(function (start) { return start.feId == line.start.feId}) || {};
                 var monext = self.flowchart.modules.find(function (next) { return next.feId == line.end.feId }) || {};
                 mostart.feNextId = monext.feId;
@@ -365,12 +364,15 @@ BaseModule.prototype.moveStart = function(event, position) {
     // 开始点
     this.startmouseX = event.pageX;
     this.startmouseY = event.pageY;
+    this.width = this.width || this.div.width();
+    this.height = this.height || this.div.height();
+    this.titleHeight = this.titleHeight || this.div.find('> .title-wraper').height();
     var scrollDistance = this.flowchart.scrollDistance();
     // 鼠标跟随模块的点
     if (position === 'center') {
         this.followPoint = {
             relativeX: this.width /2,
-            relativeY: this.height/2
+            relativeY: this.titleHeight/2
         }
     } else {
         this.followPoint = {
@@ -378,11 +380,11 @@ BaseModule.prototype.moveStart = function(event, position) {
             relativeY: event.pageY - this.flowchart.originY + scrollDistance.scrollTop - this.y
         }
     }
-   
-
+    this.div.addClass('isMoving');
 }
 BaseModule.prototype.moveEnd = function(event) {
     this.isDrag = false;
+    this.div.removeClass('isMoving');
     if (event.pageX == this.startmouseX && event.pageY == this.startmouseY && this.hasSetting) {
         var e = $.Event('modulesetting', { module: Object.assign(this)})
         this.flowchart.canvas.triggerHandler(e)
@@ -406,6 +408,7 @@ BaseModule.prototype.moveDrag = function(event) {
     this.y = event.pageY + scrollDistance.scrollTop - this.flowchart.originY- this.followPoint.relativeY;
     var width = this.containerWidth || this.width; //暂时没有containerWidth, 预留
     var height = this.containerHeight || this.height;
+    var self = this;
    
     // 模块可移动区域边界检测
     if (this.x < 0) this.x = 0;
@@ -413,7 +416,7 @@ BaseModule.prototype.moveDrag = function(event) {
 
     if (this.y < 0) this.y = 0;
     if (this.y > 0 + this.flowchart.height - height) this.y = this.flowchart.height - height;
-    this.flowchart.lines.forEach(function(line) { line.lineCoordinate(scrollDistance)})
+    this.flowchart.lines.forEach(function(line) { line.lineCoordinate(scrollDistance, self.rectWidth)})
     this.flowchart.drawLines();
     this.dragDom();
 }
@@ -445,6 +448,7 @@ function ContainModule(options={}) {
     this.childrenGap = 10;
     this.feType = 'branchmodule';
     this.children = [];
+    this.className = 'hasChildren';
 
     Object.assign(this, options);
 }
@@ -470,7 +474,7 @@ ContainModule.prototype.addBranch = function(options) {
         this.children = this.children.filter(function (child) {return !Boolean(~child.feId.indexOf('defaultChild')) });
     }
     options = Object.assign(options, { 
-        $parent: $(`#${this.feId}`),
+        $parent: this.$content,
         flowchart: this.flowchart,
         feParentId: this.feId, 
         parentwidth: this.width, 
@@ -480,21 +484,25 @@ ContainModule.prototype.addBranch = function(options) {
         containerId: this.feId
     })
     var mod = new ChildModule(options);
-    this.childrenHeight = mod.height;
+    // this.childrenHeight = mod.height;
     this.children.push(mod);
-    this.resize();
+    // this.resize();
     return mod;
 }
 ContainModule.prototype.containDraw = function() {
-    $(`#${this.feId}`).css({
-        boxSizing: 'border-box',
-        border: '1px solid #333',
-        backgroundColor: 'rgba(255, 255, 255, 0.4)'
-    });
+    if(!this.$content) {
+        this.$content = $('<div class="children-wraper"></div>');
+        this.div.append(this.$content);
+    }
+    // $(`#${this.feId}`).css({
+    //     boxSizing: 'border-box',
+    //     border: '1px solid #333',
+    //     backgroundColor: 'rgba(255, 255, 255, 0.4)'
+    // });
 }
 ContainModule.prototype.resize = function() {
-    this.containerHeight = this.height + (this.children.length+1) * this.childrenGap + this.children.length * this.childrenHeight;
-    $(`#${this.feId}`).css({height: this.containerHeight});
+    // this.containerHeight = this.height + (this.children.length+1) * this.childrenGap + this.children.length * this.childrenHeight;
+    // $(`#${this.feId}`).css({height: this.containerHeight});
 }
 
 ContainModule.prototype.removeChild = function(moduleId) {
@@ -534,15 +542,13 @@ function ChildModule(options={}) {
     this.gap = 10;
     this.width = 80;
     this.height = 20;
-    this.x = 10;
-    this.y = 40;
     this.feType = 'branch';
+    this.position = 'relative';
+    this.titleIcon = '';
     var childModuleOpt = Object.assign(this, options);
     childModuleOpt.width = childModuleOpt.parentwidth - childModuleOpt.gap * 2;
     childModuleOpt.height = childModuleOpt.parentHeight - childModuleOpt.gap;
     Object.assign(this, childModuleOpt);
-    this.x = childModuleOpt.gap || 10;
-    this.y = childModuleOpt.parentHeight + (childModuleOpt.childrenLength + 1) * childModuleOpt.gap + (childModuleOpt.childrenLength * childModuleOpt.height);
 }
 ChildModule.prototype = new BaseModule();
 ChildModule.prototype.initDraw = function() {

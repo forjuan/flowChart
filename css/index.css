@@ -1,0 +1,182 @@
+body {
+    height: 100vh;
+    margin:0px;
+  }
+#canvas {
+    border: 1px solid gray;
+}
+.father {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 100px);
+    overflow: scroll;
+    margin: 0 auto;
+}
+
+/* module */
+.basemodule {
+    position: relative;
+}
+.module-delete {
+    display: none;
+    position: absolute;
+    right: -32px;
+    top: 8px;
+    width: 34px;
+    color: #dfdfdf;
+    background-color: transparent;
+    text-align: right;
+}
+.module-delete:hover {
+    cursor: pointer;
+}
+.basemodule:hover .module-delete {
+    display: block;
+}
+.basemodule:hover {
+    cursor: move;
+}
+/* 模块在拖拽时层级最高 */ 
+.basemodule.isMoving {
+    z-index: 100;
+}
+
+
+
+/* 开始和结束模块 */
+.last-module .title-wraper,.first-module .title-wraper{
+    width: 90px;
+    background: #fff;
+    border: 1px solid #dadada;
+    color: #484848;
+}
+.last-module .hasLeftSepa::before,
+.first-module .hasLeftSepa::before{
+    background-color: #e0e0e0; 
+}
+.hasLeftMargin {
+    margin-left: 10px;
+}
+
+/* module children */
+.hasChildren .title-wraper {
+    border-bottom-right-radius: 0px;
+    border-bottom-left-radius: 0px;
+}
+.children-wraper {
+    border: 1px solid #d6d6d6;
+    border-top: 0px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+.children-wraper .basemodule {
+    background-color: #fff;
+}
+.children-wraper .basemodule .title-wraper {
+    width: 160px;
+    background-color: #fff;
+    color: #484848;
+}
+.children-wraper .basemodule + .basemodule {
+    border-top: 1px solid #d6d6d6;
+}
+.children-wraper .basemodule:last-child .title-wraper {
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+
+/* module-title */
+.title-wraper {
+    display: flex;
+    align-items: center;
+    width: 162px;
+    height: 36px;
+    color: #fff;
+    background-color: #12d2cb;
+    font-size: 14px;
+    border-radius: 4px;
+}
+
+.ivricon {
+    display: inline-block;
+    text-align: center;
+    width: 40px;
+}
+.title-text {
+    display: inline-block;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.hasLeftSepa::before {
+    content: '';
+    display: inline-block;
+    vertical-align: middle;
+    height: 26px;
+    width: 1px;
+    margin-right: 6px;
+    background-color: #fff; 
+}
+
+
+
+/* module 拖拽节点 */
+.dragableRect {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 12px;
+    width: 12px;
+    height: 12px;
+    border-radius: 100%;
+    border: 1px solid #dddddd;
+    background-color: rgba(255, 255, 255);
+    z-index: 101;
+}
+.dragableRect.leftRect {
+    left: -7px;
+    background-color: #dddddd;
+}
+.dragableRect.rightRect {
+}
+.dragableRect:hover {
+    cursor: pointer;
+    background-color: #12d2cb;
+    border-color: #12d2cb;
+}
+
+/* 拖拽模块时元素显示 */
+#copyMove {
+    position: absolute;
+    left: 0px;
+    top: -2000px;
+    opacity: 0;
+}
+
+/* 选中线后删除图标 */
+.delete-line {
+    position: fixed;
+}
+
+/* 总节点展示 */
+.nodes {
+    position: fixed;
+    left: 50%;
+    top: 430px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 10;
+}
+
+
+/* 页面button */
+.button {
+    display: inline-block;
+    border: 1px solid;
+    width: 350px;
+    line-height: 2;
+    background-color: lightblue;
+    text-align: center;
+}

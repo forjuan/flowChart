@@ -4,7 +4,8 @@ function Baseline(options={}) {
         originX: 0,
         originY: 0,
         isEnd: false,
-        lineRange: 8
+        lineRange: 8,
+        themeColor: '#12d2cb'
     }
     Object.assign(this, defaultOpts, options);
 }
@@ -23,15 +24,15 @@ Baseline.prototype.setPoint = function (opt={}) {
 }
 Baseline.prototype.styleEndPonit = function() {
     if (this.isEnd) {
-        $('#'+ this.end.feId + '>.dragableRect.end').css({
-            backgroundColor: 'green'
-        });
-        $('#'+this.end.feId + '>.dragableRect.end,' + '#' +this.start.feId + '>.dragableRect.start').addClass('connected');
+        // $('#'+ this.end.feId + '>.dragableRect.end').css({
+        //     backgroundColor: 'green'
+        // });
+        $('#'+this.end.feId + '>.title-wraper>.dragableRect.end,' + '#' +this.start.feId + '>.title-wraper>.dragableRect.start').addClass('connected');
     } else {
-        $('#'+ this.end.feId + '>.dragableRect.end').css({
-            backgroundColor: 'white'
-        });
-        $('#'+this.end.feId + '>.dragableRect.end').removeClass('connected');
+        // $('#'+ this.end.feId + '>.dragableRect.end').css({
+        //     backgroundColor: 'white'
+        // });
+        $('#'+this.end.feId + '>.title-wraper>.dragableRect.end').removeClass('connected');
     }
 }
 
@@ -59,26 +60,26 @@ Baseline.prototype.reconnected = function(deleteDir, alllines) {
     if(!otherEnd) {
         this.styleEndPonit();
     }
-    $('#' + this.start.feId + '>.start').removeClass('connected');
+    $('#' + this.start.feId + ' .start').removeClass('connected');
     this[deleteDir] = null;
 }
 
-Baseline.prototype.lineCoordinate = function(scrollDistance = {}) {
+Baseline.prototype.lineCoordinate = function(scrollDistance = {}, rectWidth) {
     // 当拖动模块时， 连线端点坐标重新获取
     // 传入滚动元素 以便获取滚动值
     var scrollLeft = scrollDistance.scrollLeft || 0,
         scrollTop = scrollDistance.scrollTop || 0;
     if (this.start) {
-        var startRect = $(`#${this.start.feId}>.start`)[0],
-            offset = $(startRect).offset();
-        this.sx = offset.left - this.originX + scrollLeft + $(startRect).width()/2;
-        this.sy = offset.top - this.originY + scrollTop + $(startRect).height()/2;
+        var startRect = $(`#${this.start.feId} .start`)[0],
+            offset = $(startRect).offset() || {};
+        this.sx = offset.left - this.originX + scrollLeft + rectWidth/2;
+        this.sy = offset.top - this.originY + scrollTop + rectWidth/2;
     }
     if (this.end) {
-        var endRect = $(`#${this.end.feId}>.end`)[0],
+        var endRect = $(`#${this.end.feId} .end`)[0],
             offset = $(endRect).offset();
-        this.ex = offset.left - this.originX + scrollLeft + $(endRect).width()/2;
-        this.ey = offset.top -  this.originY + scrollTop + $(endRect).height()/2;
+        this.ex = offset.left - this.originX + scrollLeft + rectWidth/2;
+        this.ey = offset.top -  this.originY + scrollTop + rectWidth/2;
     }
 }
 

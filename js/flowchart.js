@@ -8,10 +8,13 @@ function Flowchart(options={}) {
     this.height = this.canvas.height();
     this.originX = this.canvas.offset().left;
     this.originY = this.canvas.offset().top;
+    this.themeColor = '#12d2cb';
     this.creatingModule = null;
+    this.rectWidth = 12;
     this.scrollParent = options.scrollParent ? $(options.scrollParent) : this.canvas.parent().parent();
     this.allNodesEle = options.allNodesId ? $(options.allNodesId) : $('#allNodes');
     this.connectNodesEle = options.connectNodesId ? $(options.connectNodesId) : $('#connectedNodes');
+    this.deleteIcon = 'icon-times';
     this.lineRandomIds = [];
     this.moduleRandomIds = [];
 
@@ -36,18 +39,15 @@ Flowchart.prototype.init = function() {
     resetCanvasRatio(this.canvas, this.width, this.height, this.ratio);
     // 创建删除连线元素
     var self = this;
-    var menu = $('<ul class="menu"></ul>'),
-        del = $('<li>删除</li>');
-    del.on('click', function(ev) {
+    var $deLineIcon = $('<i class="delete-line '+ this.deleteIcon + '"></i>');
+    $deLineIcon.on('click', function(ev) {
         self.deleteFocusLine();
     });
-    menu.append(del);
-    menu.css({
+    $deLineIcon.css({
         display: 'none',
-        position: 'fixed'
     })
-    $('body').append(menu);
-    this.menu = menu;
+    this.scrollParent.append($deLineIcon);
+    this.$deLineIcon = $deLineIcon;
 }
 Flowchart.prototype.initEvent = function() {
     var self = this;
@@ -103,20 +103,21 @@ Flowchart.prototype.initEvent = function() {
             self.creatingModule.moveEnd(ev);
             var obj = Object.assign({}, self.creatingModule);
 
-            //创建module时会根据ratio重新计算
-            if (obj.fontSize) obj.fontSize = obj.fontSize / obj.ratio;
-            if (obj.textX) obj.textX = obj.textX / obj.ratio; 
             // 重新生成， 否则id相同的元素会被删除
             delete obj.feId;
+            delete obj.$title;
+            delete obj.$icon;
+            delete obj.$content;
             self.creatingModule.children && self.creatingModule.children.map(function(item) {
                 if (item.isDefaultBranch) {
                     return Object.assign({}, item);
                 }
                 delete item.feId;
-                if (item.fontSize) item.fontSize = item.fontSize / item.ratio;
-                if (item.textX) item.textX = item.textX / item.ratio; 
+                delete item.$title;
+                delete item.$icon;
                 return Object.assign({}, item);
             })
+        
             // 创建一个Module在modules中， 不能用creatingModule，否则设为null后， modules中的引用也被设置为null
             var newmodule = self.createRealModule(obj);
             self.creatingModule.destroy();
@@ -196,15 +197,15 @@ Flowchart.prototype.onLineClick = function(event) {
         l = event.clientX;
         t = event.clientY;
         
-        this.menu.css({
+        this.$deLineIcon.css({
             left: l + 'px',
             display: 'block',
             top: t + 'px'
         }) 
     } else {
-        this.menu.css({
+        this.$deLineIcon.css({
             display: 'none'
-        }) 
+        })
     }
                  
     this.drawLines();
@@ -228,7 +229,7 @@ Flowchart.prototype.drawLines = function(scrollDistance) {
     this.ctx.clearRect(0, 0, this.width * ratio, this.height * ratio);
     scrollDistance = scrollDistance || this.scrollDistance();
 
-    this.ctx.strokeStyle = 'green';
+    this.ctx.strokeStyle = this.themeColor;
     this.lines && this.lines.forEach(function (line) {
         self.ctx.beginPath();
         if (line.focus) {
@@ -440,7 +441,7 @@ Flowchart.prototype.restore = function(modules = []) {
 
     this.lines.forEach(function(line) {
         line.styleEndPonit();
-        line.lineCoordinate(scrollDistance);
+        line.lineCoordinate(scrollDistance, self.rectWidth);
     })
     this.drawLines();
     // restore后重新计算Nodes;
@@ -462,7 +463,7 @@ Flowchart.prototype.moduleLineRestore = function(obj, scrollDistance) {
             start: { feId: obj.feId },
             end: { feId: obj.feNextId}
         });
-        if (scrollDistance) line.lineCoordinate(scrollDistance);
+        if (scrollDistance) line.lineCoordinate(scrollDistance, this.rectWidth);
         this.lines.push(line);
     }
     console.timeEnd('restoremodule')

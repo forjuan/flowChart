@@ -2,7 +2,7 @@ var http = require('http');
 var fs = require('fs');
 
 http.createServer(function (req, res) {
-  res.writeHead(200, {'Content-Type' : 'text/html;charset=utf8'});
+  res.writeHead(200);
 	// 发送 HTTP 头部
 	// HTTP 状态值: 200 : OK
 	// 内容类型: text/plain
