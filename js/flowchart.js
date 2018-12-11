@@ -520,8 +520,10 @@ Flowchart.prototype.save = function () {
 
 Flowchart.prototype.restore = function(modules = []) {
     // 恢复模块
-    if (!localStorage.getItem('modules')) return;
-    modules = JSON.parse(localStorage.getItem('modules'));
+    if(!modules.length) {
+        if (!localStorage.getItem('modules')) return;
+        modules = JSON.parse(localStorage.getItem('modules'));
+    }
     modules.map(function(item) {return Object.assign(item, JSON.parse(item.viewInfo))});
     var scrollDistance = this.scrollDistance(),
         self = this;
