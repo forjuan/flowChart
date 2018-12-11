@@ -65,7 +65,7 @@ BaseModule.prototype.drawModule = function() {
     }
     if (!this.$title) {
         titleClass = this.titleIcon ? 'title-text hasLeftSepa' : 'title-text hasLeftMargin';
-        title = $('<span class="'+ titleClass + '">' + this.text + '</span>');
+        title = $('<span class="'+ titleClass + '" title="' + this.text + '">'+ this.text +'</span>');
         this.$title = title;
         this.titleWraper.append(title);
     } else {
@@ -80,7 +80,7 @@ BaseModule.prototype.init = function() {
         if (!random) console.log('模块数量超出最大值1000')
         this.feId = 'module' + new Date().getTime() + random;
     }
-    var div = $('<div id="' +this.feId+'" draggable="false" class="basemodule ' + this.className +'" style="position:' + this.position +'"></div>');
+    var div = $('<div id="' +this.feId+'" class="basemodule ' + this.className +'" style="position:' + this.position +'"></div>');
     if (this.position === 'absolute') {
         div.css({
             left: this.x + 'px',
@@ -90,12 +90,13 @@ BaseModule.prototype.init = function() {
   
     this.div = div;
     this.titleWraper = $('<div class="title-wraper"></div>');
-    
     if (this.canDrag) {
         div.mousedown(this.moveStart.bind(this));
-        $('body').mouseup(this.moveEnd.bind(this));
         $('body').mousemove(this.moveDrag.bind(this));
+        $('body').mouseup(this.moveEnd.bind(this));
+        $('html').mouseleave(this.moveEnd.bind(this));
     }
+    
     if (this.hasDelete) {
         var width = this.deleteWidth;
         var rx = 10;
@@ -140,11 +141,12 @@ BaseModule.prototype.createdragableRect = function() {
         if (focuesLine) {
             // 重新开始
             focuesLine.reconnected(otherdir, self.flowchart.lines);
-            self.flowchart.menu.hide();
+            self.flowchart.$deLineIcon.hide();
         }
 
         // 同一起点只能连线一次
         if (dir == 'start' && $(event.target).hasClass('connected')) return;
+        event.dataTransfer.setDragImage(event.target,0,0);
 
         if (!focuesLine) {
             var elementPro = '';
@@ -161,6 +163,7 @@ BaseModule.prototype.createdragableRect = function() {
         var linefirstPoint = dir + ' ' + nowId
         self.flowchart.currentDragStartModuleId = linefirstPoint;
         event.dataTransfer.effectAllowed= 'copy';
+
         // firefox 需要设置Data否则后续事件不会触发
         event.dataTransfer.setData('dragStartModuleId', linefirstPoint);
     });
@@ -257,19 +260,6 @@ BaseModule.prototype.createdragableRect = function() {
         self.flowchart.showNodes();
     });
 }
-BaseModule.prototype.inScrollParent = function(point) {
-    // point 为pagex, pagey相对于整个文档的距离
-    // 某个点是否在scrollparent 区域内
-    var offset = this.flowchart.scrollParent.offsetValue || this.flowchart.scrollParent.offset(),
-        width = this.flowchart.scrollParent.widthValue || this.flowchart.scrollParent.width(),
-        height = this.flowchart.scrollParent.heightValue || this.flowchart.scrollParent.height();
-    this.flowchart.scrollParent.offsetValue = offset;
-    this.flowchart.scrollParent.widthValue = width;
-    this.flowchart.scrollParent.heightValue = height;
-    // 矩形边界检测
-    return offset.left < point.x && point.x < offset.left + width &&
-            offset.top < point.y && point.y < offset.top + height;
-}
 
 BaseModule.prototype.moveScroll = function(event) {
     // 处理边界滚动， 如果已经在滚动不做处理
@@ -355,9 +345,12 @@ BaseModule.prototype.stopScroll = function() {
 }
 
 BaseModule.prototype.moveStart = function(event, position) {
+    event.stopPropagation();
+    // 取消聚焦的线, 并重新绘画线
+    this.flowchart.cancelFocusLine(true);
+
     if ($(event.target).is(this.$setting) || $(event.target).hasClass('dragableRect')) return;
     this.isDrag = true;
-
     //聚焦连线清除
     this.flowchart.onLineClickBind(event);
     this.stopScroll()
@@ -383,6 +376,8 @@ BaseModule.prototype.moveStart = function(event, position) {
     this.div.addClass('isMoving');
 }
 BaseModule.prototype.moveEnd = function(event) {
+    if(!this.isDrag) return;
+    this.div.find('.module-delete').show();
     this.isDrag = false;
     this.div.removeClass('isMoving');
     if (event.pageX == this.startmouseX && event.pageY == this.startmouseY && this.hasSetting) {
@@ -394,8 +389,10 @@ BaseModule.prototype.moveEnd = function(event) {
 BaseModule.prototype.moveDrag = function(event) {
     if ($(event.target).is(this.$setting) || $(event.target).hasClass('dragableRect')) return;
     if(!this.isDrag) return;
-    // 如果鼠标在可视区外，模块不被拖动
-    if (!this.inScrollParent({x: event.pageX, y: event.pageY})) {
+    this.div.find('.module-delete').hide();
+
+    // 如果鼠标在可视区外指定距离，模块不被拖动, 如果能滚动则自动滚动画布
+    if (!this.flowchart.inScrollParent({x: event.pageX, y: event.pageY}, 20)) {
         this.moveScroll(event);
         return;
     } else {
@@ -435,6 +432,8 @@ BaseModule.prototype.destroy = function() {
     //  删除相关联的线
     this.flowchart.deleteRelaLines(this.feId, this.children);
     this.div.remove();
+    this.stopScroll();
+
     // 还没消除本身对象
     this.flowchart.modules = this.flowchart.modules.filter(function(item) {return item.feId !== this.feId });
 }

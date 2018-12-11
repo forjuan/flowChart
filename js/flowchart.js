@@ -40,13 +40,17 @@ Flowchart.prototype.init = function() {
     // 创建删除连线元素
     var self = this;
     var $deLineIcon = $('<i class="delete-line '+ this.deleteIcon + '"></i>');
+    // 根据设计图而来
+    $deLineIcon.widthValue = 23;
     $deLineIcon.on('click', function(ev) {
         self.deleteFocusLine();
     });
     $deLineIcon.css({
         display: 'none',
     })
+    this.$copyMove = $('<div id="copyMove">1</div>');
     this.scrollParent.append($deLineIcon);
+    this.scrollParent.append(this.$copyMove);
     this.$deLineIcon = $deLineIcon;
 }
 Flowchart.prototype.initEvent = function() {
@@ -55,9 +59,9 @@ Flowchart.prototype.initEvent = function() {
     this.onLineClickBind = this.onLineClick.bind(this);
     this.deleteLineBind = this.deleteLineEv.bind(this);
     // 移动到连线上
-    $('body').on('mousemove', this.onLineBind);
+    this.scrollParent.on('mousemove', this.onLineBind);
     // 聚焦连线
-    $('body').on('click', this.onLineClickBind);
+    this.scrollParent.on('click', this.onLineClickBind);
     //删除连线
     $('body').on('keyup', this.deleteLineBind);
     // window resize change
@@ -98,6 +102,7 @@ Flowchart.prototype.initEvent = function() {
 
     // 拖拽完成后， 删除临时模块， 创建新模块。
     this.scrollParent.on('drop', function(ev) {
+        console.log('drop')
         ev.preventDefault();
         if (self.creatingModule && self.creatingModule.moveEnd) {
             self.creatingModule.moveEnd(ev);
@@ -132,6 +137,7 @@ Flowchart.prototype.initEvent = function() {
     // 完成拖拽时，若没在画布区域内放置， 清除临时模块
     $('body').on('dragend', function(ev) {
         if (self.creatingModule) {
+            self.creatingModule.moveEnd(ev);
             self.creatingModule.destroy && self.creatingModule.destroy();
             self.creatingModule = null;
         }
@@ -147,10 +153,7 @@ Flowchart.prototype.deleteLine = function(line) {
     this.lines = this.lines.filter(function(li={}) {return li.feId && line.feId != li.feId});
     var endId = line.end && line.end.feId;
     var otherEnd = this.lines.find(function(li={}) {return li.end && endId == li.end.feId});
-    if (!otherEnd) {
-        $('#' + endId + '>.dragableRect.end').css({backgroundColor: 'rgba(255, 255, 255, 0.5)'}).removeClass('connected');
-    };
-    $('#' + line.start.feId + '>.dragableRect.start').removeClass('connected');
+    $('#' + line.start.feId + '>.title-wraper>.dragableRect.start').removeClass('connected');
     this.drawLines();
 }
 Flowchart.prototype.deleteRelaLines = function(moduleId, children=[]) {
@@ -183,32 +186,124 @@ Flowchart.prototype.onLine = function(event) {
      });
 }
 Flowchart.prototype.onLineClick = function(event) {
+    // 如果不是点击在canvas上 而是点在模块上，不操作
+    if(!$(event.target).is(this.canvas)) return;
     event = event.originalEvent;
     var scrollDistance = this.scrollDistance();
     var x = event.pageX - this.originX + scrollDistance.scrollLeft,
         y = event.pageY - this.originY + scrollDistance.scrollTop;
+    this.cancelFocusLine();
+
     //    已有聚焦的线
-    this.lines.forEach(function(line) {line.focus = false; line.lineWidth = 1});
     var online = this.lines.find(function(line) {return line.isOnline(x, y)});
     if (online) {
         online.focus = true;
         online.lineWidth = 3;
-        var l, t;
-        l = event.clientX;
-        t = event.clientY;
-        
-        this.$deLineIcon.css({
-            left: l + 'px',
-            display: 'block',
-            top: t + 'px'
-        }) 
+        this.showDelteLineIcon(online)
     } else {
-        this.$deLineIcon.css({
-            display: 'none'
-        })
+        this.$deLineIcon.hide();
     }
-                 
     this.drawLines();
+}
+Flowchart.prototype.cancelFocusLine = function(shouldRedraw) {
+    this.lines.forEach(function(line) {line.focus = false; line.lineWidth = 1});
+    if (shouldRedraw) {
+        this.drawLines();
+        this.$deLineIcon.hide();
+    }
+}
+Flowchart.prototype.showDelteLineIcon = function(line) {
+    // 显示在线段的垂直平分线上，距离线段中点的距离distance
+    var left, top, width = this.$deLineIcon.widthValue + 3,
+        allWidth = this.width,
+        allHeight = this.height,
+        distance = 8,
+        k,//垂直平分线段的斜率,
+        b, // y=kx+b的b
+        point = {x: -100, y: -100};
+    if (line.sx === line.ex) {
+        // 斜率不存在时
+        point.x = (line.sx + line.ex)/2 - distance - width;
+        point.y = (line.sy + line.ey)/2;
+        if (!this.inCanvas(point, width, width)) {
+            point.x = (line.sx + line.ex)/2 - distance;
+        }
+    } else if (line.sy === line.ey) {
+        // 斜率为0时
+        point.x = (line.sx + line.ex)/2;
+        point.y = (line.sy + line.ey)/2 - distance - width;
+        if (!this.inCanvas(point, width, width)) {
+            point.y = (line.sy + line.ey)/2 + distance;
+        }
+    } else {
+        // 存在斜率且不为0
+        k = -(line.ex - line.sx)/(line.ey - line.sy),
+        kl = (line.ey - line.sy)/(line.ex - line.sx),
+        b = (line.ey+line.sy)/2 +(line.ex*line.ex - line.sx*line.sx)/(2* (line.ey-line.sy));
+        var points = this.getLinePoints(k, b, {x: (line.sx + line.ex)/2, y: (line.sy + line.ey)/2}, distance);
+        point = points.point1;
+        if (!this.inCanvas(point, width, width)) {
+            point = points.point2;
+        }
+         // x<中点x时， 距离应算上自身距离
+         if (points.point1.x < (line.sx + line.ex)/2) {
+            point.x = point.x - width;
+        }
+        // y<中点y时， 距离应算上自身距离
+        if (points.point1.y < (line.sy + line.ey)/2 ) {
+            point.y = point.y - width;
+        }
+
+    }
+    
+    this.$deLineIcon.css({
+        display: 'block',
+        left: point.x + 'px',
+        top: point.y + 'px'
+    }) 
+}
+// 根据k(不为0)以及，b以及其中一个点，求解两个点
+Flowchart.prototype.getLinePoints = function(k, b, point, l) {
+    // 第二步：求得在直线y=kx+b上，距离当前坐标距离为L的某点
+    // 一元二次方程Ax^2+Bx+C=0中,
+    // 一元二次方程求根公式：
+    // 两根x1,x2= [-B±√(B^2-4AC)]/2A
+    // ①(y-y0)^2+(x-x0)^2=L^2;
+    // ②y=kx+b;
+    // 式中x,y即为根据以上lenthUnit单位长度(这里就是距离L)对应点的坐标
+    // 由①②表达式得到:(k^2+1)x^2+2[(b-y0)k-x0]x+[(b-y0)^2+x0^2-L^2]=0， x0,y0即point的坐标
+    var A = k * k +1,
+        B = 2*((b-point.y) * k - point.x),
+        C = Math.pow(b - point.y,2) + Math.pow(point.x, 2) - Math.pow(l, 2);
+    var x1 = (-B-Math.sqrt(Math.pow(B, 2) - 4 * A * C))/(2*A),
+        y1 = x1*k + b,
+        x2 = (-B+Math.sqrt(Math.pow(B, 2) - 4 * A * C))/(2*A),
+        y2 = x2*k +b;
+    return {
+        point1: {x: x1, y: y1},
+        point2: {x: x2, y: y2}
+    }
+
+}
+Flowchart.prototype.inCanvas = function(point, width, height) {
+    // 矩形边界检测
+    return  0 < point.x && point.x + width < this.width &&
+            0 < point.y && point.y + height < this.height;
+}
+Flowchart.prototype.inScrollParent = function(point, d) {
+    // point 为pagex, pagey相对于整个文档的距离
+    // 某个点是否在scrollparent 区域内
+    // d 比区域小d的边界区域
+    var offset = this.scrollParent.offsetValue || this.scrollParent.offset(),
+        width = this.scrollParent.widthValue || this.scrollParent.width(),
+        height = this.scrollParent.heightValue || this.scrollParent.height();
+    this.scrollParent.offsetValue = offset;
+    this.scrollParent.widthValue = width;
+    this.scrollParent.heightValue = height,
+    d = d || 0;
+    // 矩形边界检测
+    return offset.left + d < point.x && point.x < offset.left + width - d &&
+            offset.top + d < point.y && point.y < offset.top + height - d;
 }
 Flowchart.prototype.deleteLineEv = function(event) {
     // 删除操作事件
@@ -219,6 +314,7 @@ Flowchart.prototype.deleteLineEv = function(event) {
 Flowchart.prototype.deleteFocusLine = function(event) {
     var line = this.lines.find(function(line) {return line.focus});
     this.deleteLine(line);
+    this.$deLineIcon.hide();
 
     // 删除后节点数变化
     this.showNodes();
@@ -362,8 +458,8 @@ Flowchart.prototype.scrollDistance = function() {
 }
 
 Flowchart.prototype.destroy = function() {
-    $('body').off('mousemove', this.onLineBind);
-    $('body').off('click', this.onLineClickBind);
+    this.scrollParent.off('mousemove', this.onLineBind);
+    this.scrollParent.off('click', this.onLineClickBind);
     $('body').off('keyup', this.deleteLineBind);
 }
 
