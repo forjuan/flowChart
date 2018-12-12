@@ -208,6 +208,7 @@ i[class*=icon-] {
     transform: translateX(-50%);
     pointer-events: none;
     color: #2c333b;
+    font-size: 14px;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     -khtml-user-select: none;
