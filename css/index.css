@@ -204,7 +204,7 @@ i[class*=icon-] {
     position: fixed;
     left: 50%;
     top: 430px;
-    z-index: 10;
+    z-index: 0;
     transform: translateX(-50%);
     pointer-events: none;
     color: #2c333b;
