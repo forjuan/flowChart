@@ -2,6 +2,9 @@ body {
     height: 100vh;
     margin:0px;
   }
+* {
+    box-sizing: border-box;
+}
 #canvas {
     border: 1px solid gray;
 }
@@ -37,9 +40,11 @@ i[class*=icon-] {
     display: none;
     position: absolute;
     right: -32px;
-    top: 8px;
+    top: 50%;
+    transform: translateY(-50%);
     width: 34px;
     color: #dfdfdf;
+    font-size: 23px;
     background-color: transparent;
     text-align: right;
 }
@@ -105,6 +110,7 @@ i[class*=icon-] {
 
 /* module-title */
 .title-wraper {
+    position: relative;
     display: flex;
     align-items: center;
     width: 162px;
@@ -187,6 +193,8 @@ i[class*=icon-] {
     height: 23px;
     font-size: 23px;
     cursor: pointer;
+    color: #d2d2d2;
+    z-index: 102;
 }
 
 /* 总节点展示 */

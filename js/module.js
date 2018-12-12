@@ -111,7 +111,7 @@ BaseModule.prototype.init = function() {
             // 删除后节点数变化
             self.flowchart.showNodes();
         })
-        div.append($delete);
+        this.titleWraper.append($delete);
     }
     this.drawModule();
     this.createdragableRect();
@@ -379,8 +379,8 @@ BaseModule.prototype.moveStart = function(event, position) {
     this.div.addClass('isMoving');
 }
 BaseModule.prototype.moveEnd = function(event) {
-    if(!this.isDrag) return;
     this.div.find('.module-delete').show();
+    if(!this.isDrag) return;
     this.isDrag = false;
     this.div.removeClass('isMoving');
     if (event.pageX == this.startmouseX && event.pageY == this.startmouseY && this.hasSetting) {

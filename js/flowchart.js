@@ -14,7 +14,7 @@ function Flowchart(options={}) {
     this.scrollParent = options.scrollParent ? $(options.scrollParent) : this.canvas.parent().parent();
     this.allNodesEle = options.allNodesId ? $(options.allNodesId) : $('#allNodes');
     this.connectNodesEle = options.connectNodesId ? $(options.connectNodesId) : $('#connectedNodes');
-    this.deleteIcon = 'icon-times';
+    this.deleteIcon = 'icon-IVR-shanchu';
     this.lineRandomIds = [];
     this.moduleRandomIds = [];
 
@@ -220,10 +220,8 @@ Flowchart.prototype.showDelteLineIcon = function(event,scrollDistance, line) {
         distance = 8,
         k,//垂直平分线段的斜率,
         b, // y=kx+b的b
-        kl,//线段的斜率，
-        bl,//线段的b
         point = {x: -100, y: -100}, //需要显示的点位置
-        linePoint = { x: event.pageX - this.originX - scrollDistance.scrollLeft, y: event.pageY - this.originY - scrollDistance.scrollTop };
+        linePoint = { x: event.pageX - this.originX + scrollDistance.scrollLeft, y: event.pageY - this.originY + scrollDistance.scrollTop };
     if (line.sx === line.ex) {
         linePoint.x = line.ex;
         // 斜率不存在时
@@ -242,31 +240,38 @@ Flowchart.prototype.showDelteLineIcon = function(event,scrollDistance, line) {
             point.y = linePoint.y + distance;
         }
     } else {
-        kl = (line.ey - line.sy)/(line.ex - line.sx); //线段的斜率
-        bl = line.sy - kl * line.sx;
         // 存在斜率且不为0
         k = -(line.ex - line.sx)/(line.ey - line.sy);
-        b = (line.ey+line.sy)/2 +(line.ex*line.ex - line.sx*line.sx)/(2* (line.ey-line.sy));
+        b = linePoint.y - k * linePoint.x;
         // 过鼠标的点垂直于线段的交点为linePoint.
         // 根据二元一次方程
         // ①(y1-y)/(x1-x) = -k; （x1,y1）为鼠标的点
         // ②y=kx+b;
         // 得 x = (y1+kx1-b)/2k;
-        linePoint.x = (linePoint.y + kl * linePoint.x - bl)/ (2 * kl);
-        linePoint.y = kl*linePoint.x + bl;
+        // linePoint.x = (linePoint.y + kl * linePoint.x - bl)/ (2 * kl);
+        // linePoint.y = kl*linePoint.x + bl;
         var points = this.getLinePoints(k, b, linePoint, distance);
         point = points.point1;
+        //  x<鼠标x时， 距离应算上自身距离
+         if (points.point1.x < linePoint.x) {
+            point.x = point.x - width;
+        }
+        // y<鼠标y时， 距离应算上自身距离
+        if (points.point1.y < linePoint.y ) {
+            point.y = point.y - width;
+        }
         if (!this.inCanvas(point, width, width)) {
             point = points.point2;
         }
-         // x<中点x时， 距离应算上自身距离
-         if (points.point1.x < (line.sx + line.ex)/2) {
+        // x<鼠标x时， 距离应算上自身距离
+        if (points.x < linePoint.x) {
             point.x = point.x - width;
         }
-        // y<中点y时， 距离应算上自身距离
-        if (points.point1.y < (line.sy + line.ey)/2 ) {
+        // y<鼠标y时， 距离应算上自身距离
+        if (points.y < linePoint.y ) {
             point.y = point.y - width;
         }
+       
 
     }
     
