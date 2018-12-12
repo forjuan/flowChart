@@ -199,7 +199,7 @@ Flowchart.prototype.onLineClick = function(event) {
     if (online) {
         online.focus = true;
         online.lineWidth = 3;
-        this.showDelteLineIcon(online)
+        this.showDelteLineIcon(event, scrollDistance, online)
     } else {
         this.$deLineIcon.hide();
     }
@@ -212,7 +212,7 @@ Flowchart.prototype.cancelFocusLine = function(shouldRedraw) {
         this.$deLineIcon.hide();
     }
 }
-Flowchart.prototype.showDelteLineIcon = function(line) {
+Flowchart.prototype.showDelteLineIcon = function(event,scrollDistance, line) {
     // 显示在线段的垂直平分线上，距离线段中点的距离distance
     var left, top, width = this.$deLineIcon.widthValue + 3,
         allWidth = this.width,
@@ -220,27 +220,41 @@ Flowchart.prototype.showDelteLineIcon = function(line) {
         distance = 8,
         k,//垂直平分线段的斜率,
         b, // y=kx+b的b
-        point = {x: -100, y: -100};
+        kl,//线段的斜率，
+        bl,//线段的b
+        point = {x: -100, y: -100}, //需要显示的点位置
+        linePoint = { x: event.pageX - this.originX - scrollDistance.scrollLeft, y: event.pageY - this.originY - scrollDistance.scrollTop };
     if (line.sx === line.ex) {
+        linePoint.x = line.ex;
         // 斜率不存在时
-        point.x = (line.sx + line.ex)/2 - distance - width;
-        point.y = (line.sy + line.ey)/2;
+        point.x = linePoint.x - distance - width;
+        point.y = linePoint.y;
         if (!this.inCanvas(point, width, width)) {
-            point.x = (line.sx + line.ex)/2 - distance;
+            point.x = linePoint.x - distance;
         }
     } else if (line.sy === line.ey) {
+        // 根据直线方程求鼠标的点
+        linePoint.y = line.ey;
         // 斜率为0时
-        point.x = (line.sx + line.ex)/2;
-        point.y = (line.sy + line.ey)/2 - distance - width;
+        point.x = linePoint.x;
+        point.y = linePoint.y- distance - width;
         if (!this.inCanvas(point, width, width)) {
-            point.y = (line.sy + line.ey)/2 + distance;
+            point.y = linePoint.y + distance;
         }
     } else {
+        kl = (line.ey - line.sy)/(line.ex - line.sx); //线段的斜率
+        bl = line.sy - kl * line.sx;
         // 存在斜率且不为0
-        k = -(line.ex - line.sx)/(line.ey - line.sy),
-        kl = (line.ey - line.sy)/(line.ex - line.sx),
+        k = -(line.ex - line.sx)/(line.ey - line.sy);
         b = (line.ey+line.sy)/2 +(line.ex*line.ex - line.sx*line.sx)/(2* (line.ey-line.sy));
-        var points = this.getLinePoints(k, b, {x: (line.sx + line.ex)/2, y: (line.sy + line.ey)/2}, distance);
+        // 过鼠标的点垂直于线段的交点为linePoint.
+        // 根据二元一次方程
+        // ①(y1-y)/(x1-x) = -k; （x1,y1）为鼠标的点
+        // ②y=kx+b;
+        // 得 x = (y1+kx1-b)/2k;
+        linePoint.x = (linePoint.y + kl * linePoint.x - bl)/ (2 * kl);
+        linePoint.y = kl*linePoint.x + bl;
+        var points = this.getLinePoints(k, b, linePoint, distance);
         point = points.point1;
         if (!this.inCanvas(point, width, width)) {
             point = points.point2;

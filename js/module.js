@@ -26,6 +26,8 @@ function BaseModule (options = {}) {
     this.fontSize = this.fontSize * ratio;
     this.text = options.text ? options.text : this.isFirst ? '开始': (this.isLast ? '结束': '标题');
     this.textX = this.textX * ratio;
+    this.$icon = undefined;
+    this.$title = undefined;
 
     if (this.isLast) {
         this.canbeStart = false;
@@ -130,6 +132,7 @@ BaseModule.prototype.createdragableRect = function() {
 
     $('body').on('dragstart', '#' + this.feId +'>.title-wraper>.dragableRect', function(event)  {
         event = event.originalEvent;
+        event.stopPropagation();
         // 连线只能从模块右边开始连线
         var nowId = $(event.target).parent().parent().attr('id'),
             dir = $(event.target).hasClass('start') ? 'start' : 'end',
@@ -430,12 +433,12 @@ BaseModule.prototype.dragDom = function() {
 }
 BaseModule.prototype.destroy = function() {
     //  删除相关联的线
+    var self = this;
     this.flowchart.deleteRelaLines(this.feId, this.children);
     this.div.remove();
     this.stopScroll();
-
-    // 还没消除本身对象
-    this.flowchart.modules = this.flowchart.modules.filter(function(item) {return item.feId !== this.feId });
+    // 消除本身对象
+    this.flowchart.modules = this.flowchart.modules.filter(function(item) {return item.feId !== self.feId });
 }
 
 
@@ -450,6 +453,8 @@ function ContainModule(options={}) {
     this.className = 'hasChildren';
 
     Object.assign(this, options);
+    this.$icon = undefined;
+    this.$title = undefined;
 }
 
 ContainModule.prototype = new BaseModule();
@@ -519,8 +524,9 @@ ContainModule.prototype.destroy = function() {
     this.flowchart.deleteRelaLines(this.feId, this.children);
     this.div.remove();
     // 还没消除本身对象
-    var modules = this.flowchart.modules;
-    this.flowchart.modules = this.flowchart.modules.filter(function(item) {return item.feId !== this.feId});
+    var modules = this.flowchart.modules,
+        self = this;
+    this.flowchart.modules = this.flowchart.modules.filter(function(item) {return item.feId !== self.feId});
     this.removeChildren();
 }
 
@@ -548,6 +554,9 @@ function ChildModule(options={}) {
     childModuleOpt.width = childModuleOpt.parentwidth - childModuleOpt.gap * 2;
     childModuleOpt.height = childModuleOpt.parentHeight - childModuleOpt.gap;
     Object.assign(this, childModuleOpt);
+    this.$icon = undefined;
+    this.$title = undefined;
+
 }
 ChildModule.prototype = new BaseModule();
 ChildModule.prototype.initDraw = function() {

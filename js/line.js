@@ -4,7 +4,7 @@ function Baseline(options={}) {
         originX: 0,
         originY: 0,
         isEnd: false,
-        lineRange: 8,
+        lineRange: 8, // 移到线周围相距的距离
         themeColor: '#12d2cb'
     }
     Object.assign(this, defaultOpts, options);
@@ -24,14 +24,8 @@ Baseline.prototype.setPoint = function (opt={}) {
 }
 Baseline.prototype.styleEndPonit = function() {
     if (this.isEnd) {
-        // $('#'+ this.end.feId + '>.dragableRect.end').css({
-        //     backgroundColor: 'green'
-        // });
         $('#'+this.end.feId + '>.title-wraper>.dragableRect.end,' + '#' +this.start.feId + '>.title-wraper>.dragableRect.start').addClass('connected');
     } else {
-        // $('#'+ this.end.feId + '>.dragableRect.end').css({
-        //     backgroundColor: 'white'
-        // });
         $('#'+this.end.feId + '>.title-wraper>.dragableRect.end').removeClass('connected');
     }
 }
