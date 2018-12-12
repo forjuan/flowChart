@@ -131,11 +131,13 @@ i[class*=icon-] {
     display: inline-block;
     text-align: center;
     width: 40px;
+    font-size: 20px;
     cursor: pointer;
 }
 .title-text {
     display: inline-block;
     max-width: 110px;
+    font-size: 14px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

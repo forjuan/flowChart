@@ -48,6 +48,7 @@ $('#createModuleSpecial').on('dragstart', function(event) {
         hasDelete: true, 
         isDragCreate: true, //拖动创建
         text: '时间模块',
+        titleIcon: 'icon-IVR-gongzuoshijian',
         children: [{
             feType: 'branch',
             text: '工作时间',

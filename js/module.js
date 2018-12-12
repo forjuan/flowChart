@@ -114,9 +114,9 @@ BaseModule.prototype.init = function() {
         this.titleWraper.append($delete);
     }
     this.drawModule();
-    this.createdragableRect();
     div.append(this.titleWraper);
     this.$parent.append(div);
+    this.createdragableRect();
 }
 BaseModule.prototype.createdragableRect = function() {
     var self = this;
@@ -129,10 +129,12 @@ BaseModule.prototype.createdragableRect = function() {
         var rightdiv = $('<div class="dragableRect rightRect start" draggable="true"></div>');
         this.titleWraper.append(rightdiv);
     }
+    $('#' + this.feId +'>.title-wraper>.dragableRect').on('mousedown', function(event) {
+        event.stopPropagation();
+    })
 
     $('body').on('dragstart', '#' + this.feId +'>.title-wraper>.dragableRect', function(event)  {
         event = event.originalEvent;
-        event.stopPropagation();
         // 连线只能从模块右边开始连线
         var nowId = $(event.target).parent().parent().attr('id'),
             dir = $(event.target).hasClass('start') ? 'start' : 'end',

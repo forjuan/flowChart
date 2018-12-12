@@ -519,6 +519,7 @@ Flowchart.prototype.save = function () {
           feId: item.feId,
           feNextId: item.feNextId,
           feParentId: item.feParentId,
+          titleIcon: item.titleIcon,
           x: item.x,
           y: item.y,
           isFirst: item.isFirst,
