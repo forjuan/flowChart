@@ -96,7 +96,7 @@ i[class*=icon-] {
 
 .children-wraper .basemodule .title-wraper {
     width: 160px;
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(250, 250, 250, 0.8);
     color: #484848;
 }
 .children-wraper .basemodule + .basemodule {

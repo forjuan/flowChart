@@ -173,6 +173,7 @@ BaseModule.prototype.createdragableRect = function() {
         event.dataTransfer.setData('dragStartModuleId', linefirstPoint);
     });
 
+    // 防止绑定多次同一个函数
     this.flowchart.canvas.parent().unbind('dragover.BaseModuleNode');
     this.flowchart.canvas.parent().bind('dragover.BaseModuleNode', function(event) {
         event = event.originalEvent;
@@ -187,10 +188,11 @@ BaseModule.prototype.createdragableRect = function() {
          // 如果鼠标在可视区外指定距离，模块不被拖动, 如果能滚动则自动滚动画布
         if (!self.flowchart.inScrollParent({x: event.pageX, y: event.pageY}, 40)) {
             self.moveScroll(event);
-            return;
         } else {
             self.stopScroll()
         }
+        // 当鼠标不在区域内才不计算
+        if (!self.flowchart.inScrollParent({x: event.pageX, y: event.pageY})) return;
         var scrollDistance = self.flowchart.scrollDistance();
         var x = event.pageX - self.flowchart.originX + scrollDistance.scrollLeft, y = event.pageY - self.flowchart.originY + scrollDistance.scrollTop;
         
@@ -437,7 +439,13 @@ BaseModule.prototype.moveDrag = function(event) {
     if (this.y < 0) this.y = 0;
     if (this.y > 0 + this.flowchart.height - height) this.y = this.flowchart.height - height;
     this.dragDom();
-    this.flowchart.lines.forEach(function(line) { line.lineCoordinate(scrollDistance, self.rectWidth)})
+    this.flowchart.lines.forEach(function(line) {
+        // 如果连线的断点在该模块上或者其子模块上再更新坐标值， 减少计算量
+        // 子模块只能做为开始节点
+        if (line.start.feId === self.feId || line.end.feId === self.feId || (self.children && self.children.find(function(item){return item.feId === line.start.feId}))) {
+            line.lineCoordinate(scrollDistance, self.rectWidth)
+        }
+    })
     this.flowchart.drawLines();
 }
 BaseModule.prototype.contains = function(ancestorId, descendant) {
@@ -587,12 +595,6 @@ ChildModule.prototype.initDraw = function() {
     }
    
     this.init();
-    this.childDraw();
-}
-ChildModule.prototype.childDraw = function() {
-    $(`#${this.feId}`).css({
-        backgroundColor: 'rgba(238, 238, 238, 0.5)'
-    })
 }
 
 
