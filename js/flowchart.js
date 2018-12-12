@@ -66,8 +66,8 @@ Flowchart.prototype.initEvent = function() {
     $('body').on('keyup', this.deleteLineBind);
     // window resize change
     $(window).on('resize', function () {
-        self.originX = self.canvas.offset().left;
-        self.originY = self.canvas.offset().top;
+        self.originX = self.scrollParent.offset().left;
+        self.originY = self.scrollParent.offset().top;
         // module使用flowchart的originX ,line需要重新设置
         self.lines.forEach(function(line) {
             line.originX = self.originX;
