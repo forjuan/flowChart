@@ -184,8 +184,13 @@ BaseModule.prototype.createdragableRect = function() {
             dir = linefirst[0],
             otherdir = dir == 'start' ? 'end': 'start',
             nowId = linefirst[1];
-
-
+         // 如果鼠标在可视区外指定距离，模块不被拖动, 如果能滚动则自动滚动画布
+        if (!self.flowchart.inScrollParent({x: event.pageX, y: event.pageY}, 40)) {
+            self.moveScroll(event);
+            return;
+        } else {
+            self.stopScroll()
+        }
         var scrollDistance = self.flowchart.scrollDistance();
         var x = event.pageX - self.flowchart.originX + scrollDistance.scrollLeft, y = event.pageY - self.flowchart.originY + scrollDistance.scrollTop;
         
@@ -209,6 +214,7 @@ BaseModule.prototype.createdragableRect = function() {
         event = event.originalEvent;
         self.isLinging = false;
         event.preventDefault();
+        self.stopScroll()
         // 没有两个端点的连线
         if (!self.flowchart.lines.find(function (line){ return !line.isEnd})) return;
         var myline = self.flowchart.lines.find(function(line) {
@@ -230,6 +236,7 @@ BaseModule.prototype.createdragableRect = function() {
     $('body').bind('drop.BaseModuleNode', '.dragableRect', function(event) {
         event = event.originalEvent;
         event.preventDefault();
+        self.stopScroll()
         // 找到设置的id  找到line
         var linefirstPoint = event.dataTransfer.getData('dragStartModuleId');
         if (!linefirstPoint) return;
@@ -381,10 +388,21 @@ BaseModule.prototype.moveStart = function(event, position) {
     this.div.addClass('isMoving');
 }
 BaseModule.prototype.moveEnd = function(event) {
-    // this.div.find('.module-delete').show();
-    // this.div.removeClass('isMoving');
     if(!this.isDrag) return;
+    this.div.removeClass('isMoving');
+    var scrollDistance = this.flowchart.scrollDistance(),
+        self = this;
+        this.height = $('#' + this.feId).height();
+    var mousePoint = { x: event.pageX - this.originX + scrollDistance.scrollLeft, y: event.pageY - this.originY + scrollDistance.scrollTop}
+    // 如果鼠标停留在元素上，则显示删除图标
+    if(this.x < mousePoint.x && mousePoint.x < this.x + this.width && 
+       this.y < mousePoint.y && mousePoint.y < this.y + this.height) {
+        this.div.find('.module-delete').show();
+    }
+    // 重新计算连线
     this.isDrag = false;
+   
+    // 如果是点击 则是设置
     if (event.pageX == this.startmouseX && event.pageY == this.startmouseY && this.hasSetting) {
         var e = $.Event('modulesetting', { module: Object.assign(this)})
         this.flowchart.canvas.triggerHandler(e)
@@ -394,7 +412,7 @@ BaseModule.prototype.moveEnd = function(event) {
 BaseModule.prototype.moveDrag = function(event) {
     if ($(event.target).is(this.$setting) || $(event.target).hasClass('dragableRect')) return;
     if(!this.isDrag) return;
-    // this.div.find('.module-delete').hide();
+    this.div.find('.module-delete').hide();
 
     // 如果鼠标在可视区外指定距离，模块不被拖动, 如果能滚动则自动滚动画布
     if (!this.flowchart.inScrollParent({x: event.pageX, y: event.pageY}, 20)) {
@@ -418,9 +436,9 @@ BaseModule.prototype.moveDrag = function(event) {
 
     if (this.y < 0) this.y = 0;
     if (this.y > 0 + this.flowchart.height - height) this.y = this.flowchart.height - height;
+    this.dragDom();
     this.flowchart.lines.forEach(function(line) { line.lineCoordinate(scrollDistance, self.rectWidth)})
     this.flowchart.drawLines();
-    this.dragDom();
 }
 BaseModule.prototype.contains = function(ancestorId, descendant) {
     var ancestor = document.getElementById(ancestorId);

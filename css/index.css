@@ -204,9 +204,44 @@ i[class*=icon-] {
     position: fixed;
     left: 50%;
     top: 430px;
+    z-index: 10;
     transform: translateX(-50%);
     pointer-events: none;
-    z-index: 10;
+    color: #2c333b;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+.all-nodes,
+.connected-nodes {
+    display: inline-block;
+    position: relative;
+}
+.connected-nodes {
+    margin-left: 46px; 
+}
+.connected-nodes::before,
+.all-nodes::before {
+    position: absolute;
+    content: "";
+    width: 12px;
+    height: 12px;
+    top: 50%;
+    left: -20px;
+    transform: translateY(-50%);
+    border: 1px solid #c9c9c9;
+    border-radius: 100%;
+}
+
+.all-nodes::before {
+    background-color: #fff;
+}
+.connected-nodes::before {
+    border-color: #12d2cb;
+    background-color: #12d2cb;
 }
 
 

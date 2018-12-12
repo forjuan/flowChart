@@ -102,7 +102,6 @@ Flowchart.prototype.initEvent = function() {
 
     // 拖拽完成后， 删除临时模块， 创建新模块。
     this.scrollParent.on('drop', function(ev) {
-        console.log('drop')
         ev.preventDefault();
         if (self.creatingModule && self.creatingModule.moveEnd) {
             self.creatingModule.moveEnd(ev);
@@ -488,7 +487,7 @@ Flowchart.prototype.getAllNodes = function() {
     return nodes.length;
 }
 
-// publci 获取已连接节点数
+// publc 获取已连接节点数
 Flowchart.prototype.getConnectedNodes = function() {
     // 结点连接后有connected的标识
     var nodes = this.scrollParent.find('.dragableRect.connected') || [];
@@ -548,12 +547,10 @@ Flowchart.prototype.restore = function(modules = []) {
     var scrollDistance = this.scrollDistance(),
         self = this;
     // 先恢复父模块和普通模块
-    console.time('restore');
 
     var childModules = modules.filter(function(item) {return item.feType === 'branch'}),
         otherModules = modules.filter(function(item) {return item.feType !== 'branch'});
     otherModules.forEach(function(item) {self.moduleRestore(item)});
-    console.timeEnd('restore');
 
     childModules.forEach(function(item) {self.moduleRestore(item)});
 
@@ -570,7 +567,6 @@ Flowchart.prototype.moduleRestore = function(obj)  {
     this.moduleLineRestore(moduleItem);
 }
 Flowchart.prototype.moduleLineRestore = function(obj, scrollDistance) {
-    console.time('restoremodule')
     // 模块连线恢复
     if (obj.feNextId) {
         var random = this.lineRandomIds.shift(0);
@@ -584,5 +580,4 @@ Flowchart.prototype.moduleLineRestore = function(obj, scrollDistance) {
         if (scrollDistance) line.lineCoordinate(scrollDistance, this.rectWidth);
         this.lines.push(line);
     }
-    console.timeEnd('restoremodule')
 }
