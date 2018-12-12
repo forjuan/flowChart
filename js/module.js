@@ -63,7 +63,7 @@ BaseModule.prototype.drawModule = function() {
         this.$icon = i;
         this.titleWraper.append(i);
     } else if(this.$icon) {
-        this.$icon.removeClass().addClass(this.titleIcon);
+        this.$icon.removeClass().addClass(this.titleIcon + ' ivricon');
     }
     if (!this.$title) {
         titleClass = this.titleIcon ? 'title-text hasLeftSepa' : 'title-text hasLeftMargin';
@@ -379,10 +379,10 @@ BaseModule.prototype.moveStart = function(event, position) {
     this.div.addClass('isMoving');
 }
 BaseModule.prototype.moveEnd = function(event) {
-    this.div.find('.module-delete').show();
+    // this.div.find('.module-delete').show();
+    // this.div.removeClass('isMoving');
     if(!this.isDrag) return;
     this.isDrag = false;
-    this.div.removeClass('isMoving');
     if (event.pageX == this.startmouseX && event.pageY == this.startmouseY && this.hasSetting) {
         var e = $.Event('modulesetting', { module: Object.assign(this)})
         this.flowchart.canvas.triggerHandler(e)
@@ -392,7 +392,7 @@ BaseModule.prototype.moveEnd = function(event) {
 BaseModule.prototype.moveDrag = function(event) {
     if ($(event.target).is(this.$setting) || $(event.target).hasClass('dragableRect')) return;
     if(!this.isDrag) return;
-    this.div.find('.module-delete').hide();
+    // this.div.find('.module-delete').hide();
 
     // 如果鼠标在可视区外指定距离，模块不被拖动, 如果能滚动则自动滚动画布
     if (!this.flowchart.inScrollParent({x: event.pageX, y: event.pageY}, 20)) {
