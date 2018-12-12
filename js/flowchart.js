@@ -6,8 +6,6 @@ function Flowchart(options={}) {
     this.ctx = this.canvas[0].getContext('2d');
     this.width = this.canvas.width();
     this.height = this.canvas.height();
-    this.originX = this.canvas.offset().left;
-    this.originY = this.canvas.offset().top;
     this.themeColor = '#12d2cb';
     this.creatingModule = null;
     this.rectWidth = 12;
@@ -17,6 +15,8 @@ function Flowchart(options={}) {
     this.deleteIcon = 'icon-IVR-shanchu';
     this.lineRandomIds = [];
     this.moduleRandomIds = [];
+    this.originX = this.scrollParent.offset().left;
+    this.originY = this.scrollParent.offset().top;
 
     // 生成一个0-1000的数组，生成一个Id取出一个数，以便line 线段可以生成不重复Id
     for (var i = 0; i<= 1000; i++) {
