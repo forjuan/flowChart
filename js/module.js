@@ -359,7 +359,7 @@ BaseModule.prototype.stopScroll = function() {
 }
 
 BaseModule.prototype.moveStart = function(event, position) {
-    event.stopPropagation();
+    // event.stopPropagation();
     // 取消聚焦的线, 并重新绘画线
     this.flowchart.cancelFocusLine(true);
 

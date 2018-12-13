@@ -5,9 +5,9 @@ body {
 * {
     box-sizing: border-box;
 }
-#canvas {
+/* #canvas {
     border: 1px solid gray;
-}
+} */
 i[class*=icon-] {
     display: inline-block;
     font-style: normal;

@@ -94,6 +94,7 @@ Flowchart.prototype.initEvent = function() {
     // 拖拽时移动
     this.scrollParent.on('dragover', function(ev) {
         ev.preventDefault();
+        console.log('dragover')
         if (self.creatingModule && self.creatingModule.moveDrag) {
             self.creatingModule.moveDrag(ev);
             ev.originalEvent.dataTransfer.dropEffect = "move"
@@ -136,7 +137,7 @@ Flowchart.prototype.initEvent = function() {
     // 完成拖拽时，若没在画布区域内放置， 清除临时模块
     $('body').on('dragend', function(ev) {
         if (self.creatingModule) {
-            self.creatingModule.moveEnd(ev);
+            self.creatingModule.moveEnd && self.creatingModule.moveEnd(ev);
             self.creatingModule.destroy && self.creatingModule.destroy();
             self.creatingModule = null;
         }
@@ -186,12 +187,13 @@ Flowchart.prototype.onLine = function(event) {
 }
 Flowchart.prototype.onLineClick = function(event) {
     // 如果不是点击在canvas上 而是点在模块上，不操作
-    if(!$(event.target).is(this.canvas)) return;
+    // if(!$(event.target).is(this.canvas)) return;
     event = event.originalEvent;
     var scrollDistance = this.scrollDistance();
     var x = event.pageX - this.originX + scrollDistance.scrollLeft,
         y = event.pageY - this.originY + scrollDistance.scrollTop;
     this.cancelFocusLine();
+
 
     //    已有聚焦的线
     var online = this.lines.find(function(line) {return line.isOnline(x, y)});
