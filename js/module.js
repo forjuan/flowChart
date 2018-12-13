@@ -359,7 +359,7 @@ BaseModule.prototype.stopScroll = function() {
 }
 
 BaseModule.prototype.moveStart = function(event, position) {
-    // event.stopPropagation();
+    // 设置标记， 点击在模块上， 以便连线点击的区分
     // 取消聚焦的线, 并重新绘画线
     this.flowchart.cancelFocusLine(true);
 
@@ -391,6 +391,13 @@ BaseModule.prototype.moveStart = function(event, position) {
 }
 BaseModule.prototype.moveEnd = function(event) {
     if(!this.isDrag) return;
+    this.isDrag = false;
+
+    // 如果点击到线上不处理
+    if(this.flowchart.clickLineOnModule) {
+        this.flowchart.clickLineOnModule = false;
+        return
+    };
     this.div.removeClass('isMoving');
     var scrollDistance = this.flowchart.scrollDistance(),
         self = this;
@@ -401,8 +408,6 @@ BaseModule.prototype.moveEnd = function(event) {
        this.y < mousePoint.y && mousePoint.y < this.y + this.height) {
         this.div.find('.module-delete').show();
     }
-    // 重新计算连线
-    this.isDrag = false;
    
     // 如果是点击 则是设置
     if (event.pageX == this.startmouseX && event.pageY == this.startmouseY && this.hasSetting) {

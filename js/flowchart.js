@@ -15,6 +15,7 @@ function Flowchart(options={}) {
     this.deleteIcon = 'icon-IVR-shanchu';
     this.lineRandomIds = [];
     this.moduleRandomIds = [];
+    this.clickLineOnModule = false; //是否点击到线上
     this.originX = this.scrollParent.offset().left;
     this.originY = this.scrollParent.offset().top;
 
@@ -174,30 +175,36 @@ Flowchart.prototype.onLine = function(event) {
          self = this;
      var x = event.pageX - this.originX + scrollDistance.scrollLeft,
          y = event.pageY - this.originY + scrollDistance.scrollTop;
-     this.scrollParent.css({
-         cursor: 'default'
-     });
+    //  重置
+     this.scrollParent.css('cursor', 'default');
+     $('.basemodule:hover').css('cursor', 'move');
+     
      this.lines.forEach(function(line) {
          if (line.isOnline(x, y)) {
-            self.scrollParent.css({
-                 cursor: 'pointer'
-             });
+            if($(event.target).parents().hasClass('basemodule')) {
+                $('.basemodule:hover').css('cursor', 'pointer');
+            }
+            self.scrollParent.css('cursor', 'pointer');
          } 
      });
 }
 Flowchart.prototype.onLineClick = function(event) {
     // 如果不是点击在canvas上 而是点在模块上，不操作
-    // if(!$(event.target).is(this.canvas)) return;
     event = event.originalEvent;
     var scrollDistance = this.scrollDistance();
     var x = event.pageX - this.originX + scrollDistance.scrollLeft,
         y = event.pageY - this.originY + scrollDistance.scrollTop;
     this.cancelFocusLine();
 
-
+    // 重置标识
+    this.clickLineOnModule = false;
     //    已有聚焦的线
     var online = this.lines.find(function(line) {return line.isOnline(x, y)});
     if (online) {
+        // 如果点击的是在模块上，又在线上，添加标识， 以便区分模块自身点击
+        if($(event.target).parents().hasClass('basemodule')) {
+            this.clickLineOnModule = true;
+        }
         online.focus = true;
         online.lineWidth = 3;
         this.showDelteLineIcon(event, scrollDistance, online)
