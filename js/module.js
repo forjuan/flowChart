@@ -60,7 +60,7 @@ BaseModule.prototype.drawModule = function() {
     // 更新后可能更改的dom
     var i, title, titleClass;
     if (!this.$icon && this.titleIcon) {
-        i = $('<i class="ivricon ' + this.titleIcon + '"></i>');
+        i = $('<i class="' + this.titleIcon + ' ivricon "></i>');
         this.$icon = i;
         this.titleWraper.append(i);
     } else if(this.$icon) {
