@@ -87,7 +87,7 @@ Flowchart.prototype.initEvent = function() {
             var scrollDistance = self.scrollDistance(),
                 x = ev.pageX - self.originX + scrollDistance.scrollLeft,
                 y = ev.pageY - self.originY + scrollDistance.scrollTop;
-            self.creatingModule = self.createRealModule(Object.assign(self.creatingModule, { x, y }), false);
+            self.creatingModule = self.createRealModule(Object.assign(self.creatingModule, { x, y, toCenter: true }), false);
             self.creatingModule.moveStart(ev, 'center');
             ev.originalEvent.dataTransfer.dropEffect = "move";
         } 
@@ -95,7 +95,6 @@ Flowchart.prototype.initEvent = function() {
     // 拖拽时移动
     this.scrollParent.on('dragover', function(ev) {
         ev.preventDefault();
-        console.log('dragover')
         if (self.creatingModule && self.creatingModule.moveDrag) {
             self.creatingModule.moveDrag(ev);
             ev.originalEvent.dataTransfer.dropEffect = "move"
@@ -114,6 +113,7 @@ Flowchart.prototype.initEvent = function() {
             delete obj.$title;
             delete obj.$icon;
             delete obj.$content;
+            delete obj.toCenter;
             self.creatingModule.children && self.creatingModule.children.map(function(item) {
                 if (item.isDefaultBranch) {
                     return Object.assign({}, item);

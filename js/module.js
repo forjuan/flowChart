@@ -21,6 +21,7 @@ function BaseModule (options = {}) {
     this.fontColor = '#000';
     this.titleIcon = 'icon-shuxingtushouqi';
     this.position = 'absolute';
+    this.toCenter = false; //创建时坐标再移到模块横向中点
     Object.assign(this, options);
     this.className = options.className ? options.className : '' + ' flowBaseModule';
     this.fontSize = this.fontSize * ratio;
@@ -83,12 +84,7 @@ BaseModule.prototype.init = function() {
         this.feId = 'module' + new Date().getTime() + random;
     }
     var div = $('<div id="' +this.feId+'" class="basemodule ' + this.className +'" style="position:' + this.position +'"></div>');
-    if (this.position === 'absolute') {
-        div.css({
-            left: this.x + 'px',
-            top: this.y + 'px'
-        })
-    }
+   
   
     this.div = div;
     this.titleWraper = $('<div class="title-wraper"></div>');
@@ -116,7 +112,20 @@ BaseModule.prototype.init = function() {
     this.drawModule();
     div.append(this.titleWraper);
     this.$parent.append(div);
+    if (this.toCenter) {
+        var divWidth = this.width || this.div.width(),
+            divTitleHeight = this.titleHeight || this.titleWraper.height();
+        this.x -= divWidth/2;
+        this.y -= divTitleHeight/2;
+    }
+    if (this.position === 'absolute') {
+        div.css({
+            left: this.x + 'px',
+            top: this.y + 'px'
+        })
+    }
     this.createdragableRect();
+
 }
 BaseModule.prototype.createdragableRect = function() {
     var self = this;
