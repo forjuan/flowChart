@@ -156,7 +156,7 @@ i.ivricon {
 }
 
 /* 选中线后删除图标 */
-.delete-line {
+i.delete-line {
     position: absolute;
     width: 23px;
     height: 23px;
