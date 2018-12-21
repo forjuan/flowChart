@@ -1,2 +1,4 @@
 # flowChart
-sample flowChart
+sample flowChart for special
+
+#install

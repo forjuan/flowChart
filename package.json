@@ -1,0 +1,23 @@
+{
+  "name": "flow-chart",
+  "version": "1.0.0",
+  "description": "a simple flowchart for draw ivr",
+  "main": "src/flowchart.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/forjuan/flowChart.git"
+  },
+  "keywords": [
+    "flow-chart",
+    "ivr"
+  ],
+  "author": "forjuan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/forjuan/flowChart/issues"
+  },
+  "homepage": "https://github.com/forjuan/flowChart#readme"
+}
