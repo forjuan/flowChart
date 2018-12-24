@@ -32,22 +32,19 @@
         this.lines = [];
         this.modules = [];
         this.ratio = getRatio();
-        this.canvas = $(`#${options.canvasId || 'canvas'}`);
-        this.ctx = this.canvas[0].getContext('2d');
-        this.width = this.canvas.width();
-        this.height = this.canvas.height();
+        this.width = options.canvasWidth || 1400, //
+        this.height =  options.canvasHeight ||1000, 
         this.themeColor = '#12d2cb';
         this.creatingModule = null;
         this.rectWidth = 12;
-        this.scrollParent = options.scrollParent ? $(options.scrollParent) : this.canvas.parent().parent();
-        this.allNodesEle = options.allNodesId ? $(options.allNodesId) : $('#allNodes');
-        this.connectNodesEle = options.connectNodesId ? $(options.connectNodesId) : $('#connectedNodes');
+        this.showNodesWraper = true;
+        
         this.deleteIcon = 'icon-IVR-shanchu';
         this.lineRandomIds = [];
         this.moduleRandomIds = [];
         this.clickLineOnModule = false; //是否点击到线上
-        this.originX = this.scrollParent.offset().left;
-        this.originY = this.scrollParent.offset().top;
+        
+        this.$wraper = options.wraper ? $(options.wraper) : $('body')
     
         // 生成一个0-1000的数组，生成一个Id取出一个数，以便line 线段可以生成不重复Id
         for (var i = 0; i<= 1000; i++) {
@@ -67,10 +64,32 @@
     }
     
     Flowchart.prototype.init = function() {
+
+        // 创建canvas容器元素
+        var scrollParent = $('<div class="flowchart-father" style="position: relative;overflow: auto; width: 100%; height: 100%"></div');
+        this.scrollParent = scrollParent;
+        this.$parent = $('<div class="bgcontainer"></div>')
+        this.canvas = $('<canvas class="flowchart-canvas" ></canvas');
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+        this.$wraper.append(this.scrollParent)
+
+        if (this.showNodesWraper) {
+            this.$nodesWraper = $('<div class="nodes"><span class="all-nodes">总节点数：<span class="J-allNodes"></span></span><span class="connected-nodes">已连接节点数：<span class="J-connectedNodes"></span></span></div>')
+            this.scrollParent.append(this.$nodesWraper);
+            this.allNodesEle = this.scrollParent.find('.J-allNodes');
+            this.connectNodesEle = this.scrollParent.find('.J-connectedNodes');
+        }
+        this.$parent.append(this.canvas);
+        this.scrollParent.append(this.$parent)
+        this.ctx = this.canvas[0].getContext('2d');
+        this.originX = this.scrollParent.offset().left;
+        this.originY = this.scrollParent.offset().top;
+
         resetCanvasRatio(this.canvas, this.width, this.height, this.ratio);
         // 创建删除连线元素
         var self = this;
-        var $deLineIcon = $('<i class="delete-line '+ this.deleteIcon + '"></i>');
+        var $deLineIcon = $('<i class="'+ this.deleteIcon + ' delete-line"></i>');
         // 根据设计图而来
         $deLineIcon.widthValue = 23;
         $deLineIcon.on('click', function(ev) {
@@ -309,7 +328,7 @@
             if (points.y < linePoint.y ) {
                 point.y = point.y - width;
             }
-           
+
     
         }
         
@@ -740,9 +759,8 @@
         // this这样属性才能被继承
         this.isLast = false; // 是否为结束模块
         this.isFirst = false; //是否为开始模块
-        this.$parent = $('#bgcontainer');
         this.hasDelete = false;
-        this.hasSetting = false;
+        this.hasSetting = true;
         this.ratio = ratio;
         this.text = '标题';
         this.deleteWidth = 10;
@@ -755,7 +773,6 @@
         this.fontSize = 14;
         this.textX = 5; //文字据左边偏移
         this.color =  '#333';
-        this.fontColor = '#000';
         this.titleIcon = 'icon-shuxingtushouqi';
         this.position = 'absolute';
         this.toCenter = false; //创建时坐标再移到模块横向中点
@@ -813,6 +830,7 @@
         }
     }
     BaseModule.prototype.init = function() {
+        this.$parent = this.$parent || (this.flowchart && this.flowchart.$parent)
         var self = this;
         this.rectWidth = this.flowchart.rectWidth;
         if (!this.feId) {
@@ -1268,9 +1286,7 @@
             containerId: this.feId
         })
         var mod = new ChildModule(options);
-        // this.childrenHeight = mod.height;
         this.children.push(mod);
-        // this.resize();
         return mod;
     }
     ContainModule.prototype.containDraw = function() {
@@ -1278,15 +1294,6 @@
             this.$content = $('<div class="children-wraper"></div>');
             this.div.append(this.$content);
         }
-        // $(`#${this.feId}`).css({
-        //     boxSizing: 'border-box',
-        //     border: '1px solid #333',
-        //     backgroundColor: 'rgba(255, 255, 255, 0.4)'
-        // });
-    }
-    ContainModule.prototype.resize = function() {
-        // this.containerHeight = this.height + (this.children.length+1) * this.childrenGap + this.children.length * this.childrenHeight;
-        // $(`#${this.feId}`).css({height: this.containerHeight});
     }
     
     ContainModule.prototype.removeChild = function(moduleId) {
@@ -1297,7 +1304,6 @@
                 return child;
             }
         });
-        this.resize();
     }
     ContainModule.prototype.destroy = function() {
         //  删除相关联的线
@@ -1313,7 +1319,6 @@
     ContainModule.prototype.removeChildren = function() {
         this.children.forEach(function(item) {return item.destroy()});
         this.children = [];
-        this.resize();
     }
     
     // 被包含菜单的子模块
@@ -1350,11 +1355,10 @@
     }
     
     
-    // // 指定子模块的初始模块
+    // 指定子模块的初始模块
     function SpecialModule(options = {}) {
         this.feType = 'specialBranch';
         Object.assign(this, options);
-        
     }
     SpecialModule.prototype = new ContainModule();
     SpecialModule.prototype.initDraw = function() {
@@ -1376,7 +1380,6 @@
             mod.initDraw();
         })
     }
-
 
 
     // util
@@ -1421,7 +1424,6 @@
             py = startPoint.y + (endPoint.y - startPoint.y) * r;
         return Math.sqrt(Math.pow(point.x - px, 2) + Math.pow(py - point.y, 2));
     }
-
 
     return Flowchart
 }())))

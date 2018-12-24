@@ -1,7 +1,4 @@
-// for firfox 刷新后会在原来的滚动位置，但获取滚动值时为0
-$('.father').scrollLeft(0);
-$('.father').scrollTop(0);
-var flowchart = new Flowchart({scrollParent: '.father'});
+var flowchart = new Flowchart({wraper: '.flowchart1'});
 var currentModule = {};
 
 $('#createModule').on('dragstart', function(event) {
@@ -62,6 +59,7 @@ $('#createModuleSpecial').on('dragstart', function(event) {
     //  for firefox 否则drag其他事件无法正常触发
     event.originalEvent.dataTransfer.setData('createModule', {});
 });
+
 $('#crateChildren').on('click', function() {
     let children = []
     currentModule.children.forEach(element => {
@@ -75,16 +73,16 @@ $('#crateChildren').on('click', function() {
 // 获取结点数
 $('#getNodes').on('click', function() {
     flowchart.showNodes();
-    // $(this).html('获取节点数' + flowchart.getAllNodes() + '连接节点数' +  flowchart.getConnectedNodes());
 })
 
-
+// 更新模块
 $('#update').click(function() {
     currentModule.text = $('#updateModule').val();
     flowchart.updateModule(currentModule);
     $('#addChild').parent().find('.childInput').remove();
 })
 
+// 添加子模块
 $('#addChild').click(function() {
     // 添加子模块, childModule为null则说明没创建对
     let childModule = flowchart.createModule({
