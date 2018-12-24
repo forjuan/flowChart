@@ -2,9 +2,10 @@
   "name": "flow-chart",
   "version": "1.0.0",
   "description": "a simple flowchart for draw ivr",
-  "main": "src/flowchart.js",
+  "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack"
   },
   "repository": {
     "type": "git",
@@ -19,5 +20,14 @@
   "bugs": {
     "url": "https://github.com/forjuan/flowChart/issues"
   },
-  "homepage": "https://github.com/forjuan/flowChart#readme"
+  "homepage": "https://github.com/forjuan/flowChart#readme",
+  "devDependencies": {
+    "clean-webpack-plugin": "^1.0.0",
+    "css-loader": "^2.0.2",
+    "mini-css-extract-plugin": "^0.5.0",
+    "optimize-css-assets-webpack-plugin": "^5.0.1",
+    "style-loader": "^0.23.1",
+    "webpack": "^4.28.2",
+    "webpack-cli": "^3.1.2"
+  }
 }
