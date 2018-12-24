@@ -1,6 +1,6 @@
 {
   "name": "flow-chart",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "a simple flowchart for draw ivr",
   "main": "src/index.js",
   "scripts": {
