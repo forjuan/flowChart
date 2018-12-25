@@ -1,5 +1,5 @@
 {
-  "name": "@zbj/callcenter-flow-chart-ivr",
+  "name": "flow-chart-ivr",
   "version": "0.0.2",
   "description": "a simple flowchart for draw ivr",
   "main": "src/index.js",

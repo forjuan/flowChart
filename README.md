@@ -5,7 +5,7 @@ ivr 拖拽配置，特殊流程图， canvas + dom, 依赖jquery
 方式一
 
 ```javascript
-npm install @zbj/callcenter-flow-chart-ivr --save
+npm install callcenter-flow-chart-ivr --save
 ```
 方式二
 

@@ -1,4 +1,11 @@
-var flowchart = new Flowchart({wraper: '.flowchart1'});
+var flowchart = new Flowchart({
+    wraper: '.flowchart1', 
+    showNodesWraper: true,
+    canvasWidth: 1900,
+    canvasHeight: 2000,
+    deleteIcon: 'icon-IVR-shanchu',
+    deleteLineIcon: 'icon-IVR-shanchu'
+});
 var currentModule = {};
 
 $('#createModule').on('dragstart', function(event) {
