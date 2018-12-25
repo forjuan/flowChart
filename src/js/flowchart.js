@@ -2,13 +2,6 @@
  * DEVELOPED BY
  * alice.luojuan@qq.com
  *
- * WORKS WITH:
- * IE8*, IE 9+, FF 4+, SF 5+, WebKit, CH 7+, OP 12+, BESEN, Rhino 1.7+
- * For IE8 (and other legacy browsers) WatchJS will use dirty checking  
- *
- * FORK:
- * https://github.com/forjuan/flowChart
- *
  * LICENSE: MIT
  */
 
@@ -27,7 +20,7 @@ function Flowchart(options={}) {
     this.rectWidth = 12;
     this.showNodesWraper = true;
     
-    this.deleteIcon = 'icon-IVR-shanchu';
+    this.deleteLineIcon = this.deleteIcon = 'icon-IVR-shanchu';
     this.lineRandomIds = [];
     this.moduleRandomIds = [];
     this.clickLineOnModule = false; //是否点击到线上
@@ -77,7 +70,7 @@ Flowchart.prototype.init = function() {
     resetCanvasRatio(this.canvas, this.width, this.height, this.ratio);
     // 创建删除连线元素
     var self = this;
-    var $deLineIcon = $('<i class="'+ this.deleteIcon + ' delete-line"></i>');
+    var $deLineIcon = $('<i class="'+ this.deleteLineIcon + ' delete-line"></i>');
     // 根据设计图而来
     $deLineIcon.widthValue = 23;
     $deLineIcon.on('click', function(ev) {
@@ -547,7 +540,7 @@ Flowchart.prototype.showNodes = function() {
 }
 
 // public 保存所有模块
-Flowchart.prototype.save = function () {
+Flowchart.prototype.save = function (saveInLocal = false) {
     var mos = [];
     this.modules.forEach(function(item) {
         var obj = {
@@ -577,7 +570,9 @@ Flowchart.prototype.save = function () {
         };
         mos.push(obj);
     });
-    localStorage.setItem('modules', JSON.stringify(mos));
+    if (saveInLocal) {
+        localStorage.setItem('modules', JSON.stringify(mos));
+    }
     return mos;
 }
 

@@ -99,9 +99,9 @@ $('#addChild').click(function() {
 })
 
 $('#save').click(function() {
-    flowchart.save();
+    flowchart.save(true);
 })
-$('#canvas').on('modulesetting', function(data) {
+$('.flowchart-canvas').on('modulesetting', function(data) {
     currentModule = data.module;
     $('#updateModule').val(currentModule.text);
     if(currentModule.children && currentModule.children.length) {

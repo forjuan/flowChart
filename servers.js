@@ -5,7 +5,6 @@ http.createServer(function (req, res) {
   res.writeHead(200);
   var url = (req.url == '/') ? '/index.html' : req.url;
   if (~url.indexOf('index')) url = '/examples' + url
-  console.log(url)
   fs.readFile(__dirname + url,
   function (err, data) {
     if (err) {
