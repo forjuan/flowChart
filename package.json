@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@git.zhubajie.la:luojuan/callcenter-flowchart-ivr-common.git"
+    "url": "https://github.com/forjuan/flowChart.git"
   },
   "keywords": [
     "flow-chart",
