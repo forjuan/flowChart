@@ -13,8 +13,8 @@ function Flowchart(options={}) {
     this.lines = [];
     this.modules = [];
     this.ratio = getRatio();
-    this.width = 1400;
-    this.height = 1000;
+    this.width = options.canvasWidth || 1400, //
+    this.height =  options.canvasHeight ||1000, 
     this.themeColor = '#12d2cb';
     this.creatingModule = null;
     this.rectWidth = 12;
@@ -40,7 +40,6 @@ function Flowchart(options={}) {
     }
     // moduleId同理
     this.moduleRandomIds = this.lineRandomIds.concat([]);
-    Object.assign(this, options);
     this.init();
     this.initEvent();
 }
@@ -534,11 +533,10 @@ Flowchart.prototype.getConnectedNodes = function() {
 
 // 节点数相关信息显示在页面内容上
 Flowchart.prototype.showNodes = function() {
-    if (!this.showNodesWraper) return
     var allNodes = this.getAllNodes(),
         connectNodes = this.getConnectedNodes();
-    this.allNodesEle.html(allNodes);
-    this.connectNodesEle.html(connectNodes);
+    this.allNodesEle.text(allNodes);
+    this.connectNodesEle.text(connectNodes);
 }
 
 // public 保存所有模块

@@ -70,11 +70,12 @@ BaseModule.prototype.drawModule = function() {
     }
     if (!this.$title) {
         titleClass = this.titleIcon ? 'title-text hasLeftSepa' : 'title-text hasLeftMargin';
-        title = $('<span class="'+ titleClass + '" title="' + this.text + '">'+ this.text +'</span>');
+        title = $('<span class="'+ titleClass + '" title="' + this.text + '"></span>');
+        title.text(this.text);
         this.$title = title;
         this.titleWraper.append(title);
     } else {
-        this.$title.html(this.text);
+        this.$title.text(this.text);
     }
 }
 BaseModule.prototype.init = function() {

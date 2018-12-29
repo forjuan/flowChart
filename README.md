@@ -93,7 +93,7 @@ restore(modules) 恢复所有模块，
 # 事件
 modulesetting, 回调参数的module属性包含当前模块的数据
 ```
-$(wraper).find$('.flowchart-canvas').on('modulesetting', function(data){
+$(wraper).find('.flowchart-canvas').on('modulesetting', function(data){
     currentModule = data.module
 })
 ```

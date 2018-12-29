@@ -17,6 +17,9 @@
     * {
         box-sizing: border-box;
     }
+    .button {
+      cursor: move;
+    }
  
     .flowchart1 {
       position: relative;
@@ -49,15 +52,15 @@
     <p>
       <label>普通模块名称</label> <input id="moduleName" type="text">
       <!-- firefox can not drag button  -->
-      <span class="button" id="createModule" draggable="true">创建模块</span>
+      <span class="button" id="createModule" draggable="true" title="拖我进画布">创建模块</span>
       <span class="button" id="getNodes">获取总结点数</span>
     </p>
     <h3>分支模块</h3>
     <p>
       <label>分支模块名称</label><input id="branchModuleName" type="text">
       <br/>
-      <span class="button" id="createModuleBranch" draggable="true">创建分支模块</span>
-      <span class="button" id="createModuleSpecial" draggable="true">创建特殊分支模块</span>
+      <span class="button" id="createModuleBranch" title="拖我进画布" draggable="true">创建分支模块</span>
+      <span class="button" id="createModuleSpecial" title="拖我进画布" draggable="true">创建特殊分支模块</span>
     </p>
 
     <p>设置module：
