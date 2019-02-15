@@ -7,7 +7,7 @@
 
 import Baseline from './line.js';
 import { BaseModule, ContainModule, ChildModule, SpecialModule } from './module.js';
-import { getRatio, resetCanvasRatio } from './utils.js';
+import { getRatio, resetCanvasRatio, drawArrow } from './utils.js';
 
 function Flowchart(options={}) {
     this.lines = [];
@@ -15,10 +15,10 @@ function Flowchart(options={}) {
     this.ratio = getRatio();
     this.width = options.canvasWidth || 1400, //
     this.height =  options.canvasHeight ||1000, 
-    this.themeColor = '#12d2cb';
-    this.creatingModule = null;
-    this.rectWidth = 12;
+    this.themeColor = options.themeColor || '#12d2cb';
+    this.rectWidth = options.rectWidth || 12;
     this.showNodesWraper = true;
+    this.creatingModule = null;
     
     this.deleteLineIcon = this.deleteIcon = 'icon-IVR-shanchu';
     this.lineRandomIds = [];
@@ -385,15 +385,23 @@ Flowchart.prototype.drawLines = function(scrollDistance) {
     this.ctx.strokeStyle = this.themeColor;
     this.lines && this.lines.forEach(function (line) {
         self.ctx.beginPath();
+        let lineWidth = 1 * ratio;
+        let arrawLength = lineWidth * 10;
         if (line.focus) {
-            self.ctx.lineWidth = line.lineWidth * ratio;
-        } else {
-            self.ctx.lineWidth = 1 * ratio;
-        }
+           lineWidth = line.lineWidth * ratio;
+           arrawLength = lineWidth / 2   * 10;
+        } 
+
+        var fromx = line.sx * ratio,
+            fromy = line.sy * ratio,
+            tox = line.ex * ratio,
+            toy = line.ey * ratio;
+        self.ctx.lineWidth = lineWidth;
         self.ctx.moveTo(line.sx * ratio,line.sy * ratio);
         self.ctx.lineTo(line.ex * ratio,line.ey * ratio);
         self.ctx.closePath();
         self.ctx.stroke();
+        drawArrow(self.ctx, fromx, fromy, tox, toy, 30, arrawLength, 1, self.themeColor)
     });
 }
 // public

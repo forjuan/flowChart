@@ -73,7 +73,7 @@ Baseline.prototype.lineCoordinate = function(scrollDistance = {}, rectWidth) {
     if (this.end) {
         var endRect = $(`#${this.end.feId} .end`)[0],
             offset = $(endRect).offset();
-        this.ex = offset.left - this.originX + scrollLeft + rectWidth/2;
+        this.ex = offset.left - this.originX + scrollLeft ;
         this.ey = offset.top -  this.originY + scrollTop + rectWidth/2;
     }
 }
