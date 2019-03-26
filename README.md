@@ -100,11 +100,7 @@ $(wraper).find('.flowchart-canvas').on('modulesetting', function(data){
 
 # example
 ```
-node servers.js 
-```
-或者
-```
-npm run server
+npm run start:dev
 
 ```
-visit [http://localhost:8000/](http://localhost:8000/)
+visit [http://localhost:9000/](http://localhost:9000/)
