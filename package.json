@@ -1,12 +1,13 @@
 {
   "name": "flow-chart-ivr",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "a simple flowchart for draw ivr",
   "main": "src/index.js",
   "scripts": {
     "server": "node servers.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack"
+    "build": "webpack",
+    "start:dev": "webpack-dev-server --hot --inline --progress --config webpack.dev.js"
   },
   "repository": {
     "type": "git",
@@ -25,10 +26,17 @@
   "devDependencies": {
     "clean-webpack-plugin": "^1.0.0",
     "css-loader": "^2.0.2",
+    "html-webpack-plugin": "^3.2.0",
     "mini-css-extract-plugin": "^0.5.0",
     "optimize-css-assets-webpack-plugin": "^5.0.1",
+    "raphael": "^2.2.7",
     "style-loader": "^0.23.1",
     "webpack": "^4.28.2",
-    "webpack-cli": "^3.1.2"
+    "webpack-cli": "^3.1.2",
+    "webpack-dev-server": "^3.1.14",
+    "webpack-merge": "^4.2.1"
+  },
+  "dependencies": {
+    "jquery": "^3.3.1"
   }
 }

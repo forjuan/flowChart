@@ -1,4 +1,4 @@
-import Flowchart from './js/flowchart.js';
+import Flowchart from './js/flowchart.public';
 import './css/flowchart.css';
 
 window.Flowchart = Flowchart

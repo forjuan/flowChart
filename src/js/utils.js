@@ -42,6 +42,50 @@ function pointToSegDist(point, startPoint, endPoint) {
     return Math.sqrt(Math.pow(point.x - px, 2) + Math.pow(py - point.y, 2));
 }
 
+// 去除数组中指定对象
+function removeObject(array, obj) {
+    let index = array.indexOf(obj)
+    if (index >=0) {
+        array.splice(index, 1) 
+    }
+}
+
+// 去除数组中指定唯一主键的的对象
+function removeObjectByKey(array, key, value) {
+    let indexI = -1;
+    let obj = array.find((arr, index) => {
+        if (arr[key] === value) {
+            indexI = index
+            return true
+        } else return false
+        
+    });
+    obj && array.splice(indexI, 1)
+}
+
+// 根据k(不为0)以及，b以及其中一个点，求解距离该点l距离的两个点
+function getLinePoints(k, b, point, l) {
+    // 第二步：求得在直线y=kx+b上，距离当前坐标距离为L的某点
+    // 一元二次方程Ax^2+Bx+C=0中,
+    // 一元二次方程求根公式：
+    // 两根x1,x2= [-B±√(B^2-4AC)]/2A
+    // ①(y-y0)^2+(x-x0)^2=L^2;
+    // ②y=kx+b;
+    // 式中x,y即为根据以上lenthUnit单位长度(这里就是距离L)对应点的坐标
+    // 由①②表达式得到:(k^2+1)x^2+2[(b-y0)k-x0]x+[(b-y0)^2+x0^2-L^2]=0， x0,y0即point的坐标
+    var A = k * k + 1,
+      B = 2 * ((b - point.y) * k - point.x),
+      C = Math.pow(b - point.y, 2) + Math.pow(point.x, 2) - Math.pow(l, 2);
+    var x1 = (-B - Math.sqrt(Math.pow(B, 2) - 4 * A * C)) / (2 * A),
+      y1 = x1 * k + b,
+      x2 = (-B + Math.sqrt(Math.pow(B, 2) - 4 * A * C)) / (2 * A),
+      y2 = x2 * k + b;
+    return {
+      point1: { x: x1, y: y1 },
+      point2: { x: x2, y: y2 }
+    }
+  }
+
 // 绘制箭头
 function drawArrow(ctx, fromX, fromY, toX, toY,theta,headlen,width,color) { 
     theta = typeof(theta) != 'undefined' ? theta : 30;
@@ -74,9 +118,30 @@ function drawArrow(ctx, fromX, fromY, toX, toY,theta,headlen,width,color) {
      ctx.restore();
 }
 
+// 判断点是否在圆圈内
+function pointInCircle(pointx, pointy, cx, cy, r) {
+    return Math.pow(pointx - cx, 2) + Math.pow(pointy - cy, 2) <= Math.pow(r, 2)
+}
+
+// 鼠标事件坐标x转为svg相对坐标
+function getSvgPositionX(scale, $scroll, offLeft, x) {
+    return (x - offLeft + $scroll.scrollLeft())/scale
+}
+
+// 鼠标事件坐标y转为svg相对坐标
+function getSvgPositionY(scale, $scroll, offTop, y) {
+    return (y - offTop + $scroll.scrollTop())/scale
+}
+
 export {
     getRatio,
     resetCanvasRatio,
     pointToSegDist,
-    drawArrow
+    drawArrow,
+    pointInCircle,
+    getSvgPositionX,
+    getSvgPositionY,
+    getLinePoints,
+    removeObject,
+    removeObjectByKey
 }

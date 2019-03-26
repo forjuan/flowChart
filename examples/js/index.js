@@ -1,131 +1,140 @@
-var flowchart = new Flowchart({
-    wraper: '.flowchart1', 
-    showNodesWraper: true,
-    canvasWidth: 1900,
-    canvasHeight: 2000,
-    deleteIcon: 'icon-IVR-shanchu',
-    deleteLineIcon: 'icon-IVR-shanchu'
-});
-var currentModule = {};
 
-$('#createModule').on('dragstart', function(event) {
-     // 拖动创建普通模块
-     var text = $('#moduleName').val();
-     var obj = text ? {text}: {};
-   
-     event.originalEvent.dataTransfer.setDragImage(document.getElementById('copyMove'),0,0);
-     flowchart.createModule(Object.assign(obj, {
-         feType: 'normal',
-         hasSetting: true,
-         hasDelete: true, 
-         isDragCreate: true
-    }));
-      
-     //  for firefox 否则drag其他事件无法正常触发
-      event.originalEvent.dataTransfer.setData('createModule', {});
-})
+new Vue({
+    el: '#flowchart-wraper',
+    data: function() {
+        return {
+            scale: 0.1,
+            currentModule: {}
+        }
+    },
+    template: `<div>
+                    <span class="button" v-on:click="createModule">创建模块</span>
+                    <span class="button" v-on:click="createContainModule">创建分支模块</span>
+                    <span class="button" v-on:click="createSpecialModule">创建特殊分支模块</span>
+                    <p><label>放大/缩小</label><input v-on:change="changeScale" type="range" min=0 max= 0.2 step=0.02 v-model="scale"></p>
+                    <span class="button" v-on:click="save">保存</span>
+                    <div class='flowchart'></div>
+                </div>`,
+    mounted: function() {
+            // 初始化整个流程图
+        let flowchart = this.flowchart = new Flowchart({
+            wraper: '.flowchart', 
+            showNodesWraper: true,
+            deleteIcon: 'icon-IVR-shanchu',
+            deleteLineIcon: 'icon-IVR-shanchu'
+        });
 
-$('#createModuleBranch').on('dragstart', function(event) {
-    // 拖动创建普通包含模块
-    var text = $('#branchModuleName').val();
-    var obj = text ? {text}: {};
-    event.originalEvent.dataTransfer.setDragImage(document.getElementById('copyMove'),0,0);
-    flowchart.createModule(Object.assign(obj, {
-        feType: 'branchmodule', 
-        hasSetting: true,
-        hasDelete: true, 
-        isDragCreate: true, //拖动创建,
-        text: '分支模块'
-    }));
-     
-    //  for firefox 否则drag其他事件无法正常触发
-     event.originalEvent.dataTransfer.setData('createModule', {});
-})
-$('#createModuleSpecial').on('dragstart', function(event) {
-    // 拖动创建普通包含模块
-    var text = $('#branchModuleName').val();
-    var obj = text ? {text}: {};
-    event.originalEvent.dataTransfer.setDragImage(document.getElementById('copyMove'),0,0);
-    flowchart.createModule(Object.assign(obj, {
-        feType: 'specialBranch', 
-        hasSetting: true,
-        hasDelete: true, 
-        isDragCreate: true, //拖动创建
-        text: '时间模块',
-        titleIcon: 'icon-IVR-gongzuoshijian',
-        children: [{
-            feType: 'branch',
-            text: '工作时间',
-            notChange: true,
-        }, {
-            feType: 'branch',
-            text: '非工作时间'
-        }]
-    }));
-    
-    //  for firefox 否则drag其他事件无法正常触发
-    event.originalEvent.dataTransfer.setData('createModule', {});
-});
+        // 恢复流程图
+        flowchart.restore()
+        if(flowchart.modules.length === 0){
+            flowchart.createModule(Object.assign({isFirst: true, hasSetting: true, isDragCreate: false, x: 0, y:10}));
+            flowchart.createModule(Object.assign({isLast: true, text: '结束', isDragCreate: false, x: 100, y:80}));
+        }
+        // // 设置
+        $('.flowchart').on('modulesetting', (data) =>{
+            this.moduleSetting(data.module)
+        });
+    },
+    methods: {
+        createModule() {
+            this.flowchart.createModule({
+                feType: 'normal',
+                hasSetting: true,
+                hasDelete: true, 
+                isDragCreate: false,
+                text: '普通模块'
+            });
+        },
+        createContainModule() {
+            this.flowchart.createModule({
+                feType: 'branchmodule', 
+                hasSetting: true,
+                hasDelete: true, 
+                isDragCreate: false, //拖动创建,
+                text: '包含模块'
+            });
+        },
+        createSpecialModule() {
+            this.flowchart.createModule({
+                feType: 'specialBranch', 
+                hasSetting: true,
+                hasDelete: true, 
+                isDragCreate:false, //拖动创建
+                text: '时间模块',
+                titleIcon: 'icon-IVR-gongzuoshijian',
+                children: [{
+                    feType: 'branch',
+                    text: '工作时间',
+                    notChange: true,
+                }, {
+                    feType: 'branch',
+                    text: '非工作时间'
+                }]
+            });
+        },
+        changeScale() {
+            this.flowchart.changeScale(this.scale * 10)
+        },
+        save() {
+            this.flowchart.save(true);
+        },
+        moduleSetting(currentModule) {
+            this.currentModule = currentModule;
+            content="<div id='setting-module-wraper'></div>";
 
-$('#crateChildren').on('click', function() {
-    let children = []
-    currentModule.children.forEach(element => {
-        children.push(Object.assign({},element))
-    });
-    let obj = children.shift();
-    children.push(obj);
-    flowchart.removeChildren(currentModule.feId);
-    flowchart.createChildren(currentModule.feId, children);
-})
-// 获取结点数
-$('#getNodes').on('click', function() {
-    flowchart.showNodes();
-})
+            layer.open({
+                type: 0, 
+                title: '编辑模块',
+                content, //这里content是一个普通的String
+                yes: (index, layero) => {
+                    this.flowchart.updateModule(currentModule)
+                    layer.close(index);
+                }
+              });
 
-// 更新模块
-$('#update').click(function() {
-    currentModule.text = $('#updateModule').val();
-    flowchart.updateModule(currentModule);
-    $('#addChild').parent().find('.childInput').remove();
-})
-
-// 添加子模块
-$('#addChild').click(function() {
-    // 添加子模块, childModule为null则说明没创建对
-    let childModule = flowchart.createModule({
-        feType: 'branch',
-        feParentId: currentModule.feId, //父级模块id 必须
-        text: $('#childModule').val()
-    })
-    let input = $(`<input class="childInput"value=${childModule.text}>`);
-    input.change(function() {
-        childModule.text = this.value;
-        flowchart.updateModule(childModule);
-    })
-    $('#addChild').parent().append(input)
-})
-
-$('#save').click(function() {
-    flowchart.save(true);
-})
-$('.flowchart-canvas').on('modulesetting', function(data) {
-    currentModule = data.module;
-    $('#updateModule').val(currentModule.text);
-    if(currentModule.children && currentModule.children.length) {
-        for(let i=0; i< currentModule.children.length; i++) {
-            let child = currentModule.children[i];
-            let input = $(`<input value=${child.text}>`);
-            input.change(function() {
-                child.text = this.value;
-                flowchart.updateModule(child);
+            new Vue({
+                el:'#setting-module-wraper',
+                template: `<div><module-setting :currentModule="currentModule" :flowchart="flowchart"></module-setting></div>`,
+                data: { currentModule: this.currentModule, flowchart: this.flowchart }
             })
-            $('#addChild').parent().append(input);
         }
     }
-});
+})
 
-flowchart.restore()
-if(flowchart.modules.length === 0){
-    flowchart.createModule(Object.assign({isFirst: true, hasSetting: true, isDragCreate: false}));
-    flowchart.createModule(Object.assign({isLast: true, text: '结束', isDragCreate: false}));
-}
+
+// 设置模块组件
+var settingComponent = Vue.component('module-setting', {
+    data: function() {
+        return {
+            showAddInput: false,
+            newChild: {}
+        } 
+    },
+    props: ['currentModule', 'flowchart'],
+    template: `<div><label> 标题:</label><input id="text" v-model="currentModule.text"/>
+                <h1 v-if="currentModule.children">子模块</h1>
+                <ul v-if="currentModule.children">
+                    <li v-for="item in currentModule.children">
+                        <input v-model="item.text"> <span v-on:click="removeChild(item)" title="删除">-</span>
+                    </li>
+                </ul>
+                <div v-if="currentModule.feType!=='normal' && !showAddInput" v-on:click="showAddInput = true">+添加子模块</div>
+                <input v-if="showAddInput" v-model="newChild.text" v-on:change="addChild(currentModule.feId)">
+              </div>
+             `,
+    methods: {
+        removeChild: function (item) {
+            this.flowchart.removeChildModule(item.feParentId, item.feId)
+        },
+        addChild: function(feParentId) {
+            this.flowchart.createModule({
+                feType: 'branch',
+                feParentId: feParentId, //父级模块id 必须
+                text: this.newChild.text
+            })
+            this.showAddInput = false
+        }
+    }
+})
+
+

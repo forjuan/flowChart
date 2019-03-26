@@ -5,10 +5,6 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = {
   entry: './src/index.js',
-  output: {
-    filename: 'flowchart.min.js',
-    path: path.resolve(__dirname, 'dist')
-  },
   optimization: {
     minimizer: [
         new OptimizeCssAssetsPlugin({})
@@ -35,18 +31,5 @@ module.exports = {
             use: [ MiniCssExtractPlugin.loader, 'css-loader' ]
         }
     ]
- },
- devServer: {
-    contentBase: path.join(__dirname, 'examples'),
-    compress: true,
-    port: 9000,
-    filename: 'flowchart.min.js',
-    output: {
-      path: path.resolve(__dirname, 'examples/dist')
-    },
-    hot: true,
-    hotOnly: true,
-    index: 'index.html'
-  }
- 
+ }
 };

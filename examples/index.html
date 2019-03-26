@@ -7,8 +7,9 @@
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="//at.alicdn.com/t/font_717255_sirkqsjkvwp.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"> </script> 
-    <link rel="stylesheet" href="../dist/flowchart.min.css">
+    <script src="./js/jquery-3.3.1.min.js"></script>
+    <script src="./js/layer/layer.js"></script>
+    <script src="https://vuejs.org/js/vue.min.js"></script>
     <style>
     body {
         height: 100vh;
@@ -18,13 +19,15 @@
         box-sizing: border-box;
     }
     .button {
-      cursor: move;
+      cursor: pointer;
     }
  
-    .flowchart1 {
+    .flowchart {
       position: relative;
       width: 100%;
       height: 500px;
+      border: 1px solid;
+      margin-top: 20px;
     }
     .iconfont,[class^=icon-] {
       display: inline-block;
@@ -46,36 +49,8 @@
     </style>
   </head>
   <body>
-    <h1>canvas flow chart</h1>
-    <h3>普通模块</h3>
-    
-    <p>
-      <label>普通模块名称</label> <input id="moduleName" type="text">
-      <!-- firefox can not drag button  -->
-      <span class="button" id="createModule" draggable="true" title="拖我进画布">创建模块</span>
-      <span class="button" id="getNodes">获取总结点数</span>
-    </p>
-    <h3>分支模块</h3>
-    <p>
-      <label>分支模块名称</label><input id="branchModuleName" type="text">
-      <br/>
-      <span class="button" id="createModuleBranch" title="拖我进画布" draggable="true">创建分支模块</span>
-      <span class="button" id="createModuleSpecial" title="拖我进画布" draggable="true">创建特殊分支模块</span>
-    </p>
-
-    <p>设置module：
-      <input id="updateModule">
-      <button id="update">更新</button>
-      <input id="childModule">
-      <button id="addChild">添加子模块</button>
-    </p>
-    <p><button id='crateChildren'>批量添加</button></p>
-    
-
-    <button id="save">保存流程</button>
-    <div class="flowchart1"></div>
-    <script src="../dist/flowchart.min.js"></script>
+    <h1>svg flow chart</h1>
+    <div id="flowchart-wraper"></div>
     <script src="./js/index.js"></script>
-   
   </body>
 </html>
